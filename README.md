@@ -13,6 +13,7 @@
 *   Flask/FastAPI (for REST API)
 *   Libraries for data processing, natural language processing (NLP), vector embeddings.
 *   Integration with database/search technologies (e.g., PostgreSQL, Elasticsearch, Pinecone).
+* we can use Sentence Transformers (all-MiniLM-L6-v2) + FAISS 
 
 **API Interactions (As an API Provider):**
 *   Exposes a RESTful API for `sentiric-agent-service` to query information.
