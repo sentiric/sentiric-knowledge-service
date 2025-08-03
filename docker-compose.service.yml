@@ -1,18 +1,58 @@
-
-services:
-  knowledge-service:
-    image: ${DOCKER_REGISTRY:-ghcr.io/sentiric}/sentiric-knowledge-service:${TAG:-latest}
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: sentiric_knowledge_service
-    env_file:
-      - ./.env
-    networks:
-      - sentiric-net
-    restart: unless-stopped
-
 networks:
   sentiric-net:
     name: ${NETWORK_NAME:-sentiric-net}
     driver: bridge
+
+volumes:
+  postgres_data:
+  qdrant_data:
+
+services:
+  # VERİ KATMANI
+  postgres:
+    image: postgres:16-alpine
+    env_file:
+      - ./.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../sentiric-infrastructure/postgres-init:/docker-entrypoint-initdb.d
+    # ports:
+    #   - "${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}"
+    networks:
+      - sentiric-net
+    profiles:
+      - default
+      - data
+    restart: always
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    networks:
+      - sentiric-net
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: always
+    profiles:
+      - default
+      - data
+
+    
+  knowledge-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: sentiric-knowledge-service
+    env_file:
+      - ./.env
+    volumes:
+      - ../sentiric-infrastructure/tls/certs:/etc/sentiric/tls:ro
+    ports:
+      - "${KNOWLEDGE_SERVICE_PORT}:${KNOWLEDGE_SERVICE_PORT}"
+    networks:
+      - sentiric-net
+    profiles:
+      - default
+    restart: always
