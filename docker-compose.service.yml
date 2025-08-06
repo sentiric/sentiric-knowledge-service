@@ -12,7 +12,7 @@ services:
   postgres:
     image: postgres:16-alpine
     env_file:
-      - ./.env
+      - ./.env.docker
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../sentiric-infrastructure/postgres-init:/docker-entrypoint-initdb.d
@@ -25,8 +25,16 @@ services:
       - data
     restart: always
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5       
+
   qdrant:
     image: qdrant/qdrant:latest
+    env_file:
+      - ./.env.docker    
     ports:
       - "6333:6333"
     networks:
@@ -43,16 +51,27 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        SERVICE_NAME: sentiric-knowledge-service
     env_file:
-      - ./.env
+      - ./.env.docker
+    
+    # YENİ: Yerel 'data' klasörünü container içindeki '/app/data' klasörüne bağlıyoruz.
     volumes:
-      - ../sentiric-infrastructure/tls/certs:/etc/sentiric/tls:ro
+      - ./data:/app/data
+
     ports:
-      - "${KNOWLEDGE_SERVICE_PORT}:${KNOWLEDGE_SERVICE_PORT}"
+      - "5055:5055" # .env dosyasındaki port ile tutarlı olsun
     networks:
       - sentiric-net
     profiles:
       - default
+      - ai
     restart: always
+
+    # YENİ EKLENEN KISIM:
+    # Bu servisin başlamadan önce hem qdrant'ın hem de postgres'in
+    # tamamen sağlıklı ve hazır olmasını bekle.
+    depends_on:
+      qdrant:
+        condition: service_started # Qdrant'ın healthcheck'i yok, started yeterli
+      postgres:
+        condition: service_healthy # Postgres'in healthcheck'i var, healthy olmalı
