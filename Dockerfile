@@ -28,7 +28,6 @@ WORKDIR /app
 
 # Cache ve PATH'i üretim ortamı için ayarla
 ENV HF_HOME=/app/cache/huggingface \
-    NO_COLOR=1 \
     # Bu değişken, production imajında da bulunursa iyi olur
     PIP_BREAK_SYSTEM_PACKAGES=1 
 

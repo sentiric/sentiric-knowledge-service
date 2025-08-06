@@ -18,7 +18,7 @@ def run_indexing():
 
     for tenant_id in tenants:
         logger.info(f"Tenant işleniyor: {tenant_id}")
-        collection_name = f"{settings.QDRANT_COLLECTION_PREFIX}{tenant_id}"
+        collection_name = f"{settings.VECTOR_DB_COLLECTION_PREFIX}{tenant_id}"
         setup_collection(collection_name) # Her tenant için koleksiyon oluştur
 
         documents = get_documents_for_tenant(tenant_id)

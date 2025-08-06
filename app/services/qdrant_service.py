@@ -5,7 +5,7 @@ from app.services.embedding_service import get_embedding_model
 
 @lru_cache(maxsize=1)
 def get_qdrant_client():
-    return QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+    return QdrantClient(host=settings.VECTOR_DB_HOST, port=settings.VECTOR_DB_PORT)
 
 # DÜZELTME: collection_name argümanını kabul et
 def setup_collection(collection_name: str):

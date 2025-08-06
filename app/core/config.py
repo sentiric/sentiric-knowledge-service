@@ -8,10 +8,11 @@ class Settings(BaseSettings):
     
     POSTGRES_URL: str
     
-    QDRANT_HOST: str
-    QDRANT_PORT: int
-    QDRANT_COLLECTION_PREFIX: str = "sentiric_kb_"
-    EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
+    VECTOR_DB_HOST:  str = "qdrant"
+    VECTOR_DB_PORT: int = 6333
+    VECTOR_DB_COLLECTION_NAME: str = "sentiric_kb"
+    VECTOR_DB_COLLECTION_PREFIX: str = "sentiric_kb_"
+    VECTOR_DB_EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
     model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
