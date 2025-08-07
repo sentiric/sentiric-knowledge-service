@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     VECTOR_DB_COLLECTION_PREFIX: str = "sentiric_kb_"
 
     # API Sunucusu Ayarları
-    KNOWLEDGE_SERVICE_PORT: int = Field(5055, validation_alias="KNOWLEDGE_SERVICE_PORT")
+    KNOWLEDGE_SERVICE_PORT: int = Field(50055, validation_alias="KNOWLEDGE_SERVICE_PORT")
 
     # Pydantic'e .env dosyasını okumasını ve büyük/küçük harf duyarsız olmasını söyler
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore', case_sensitive=False)

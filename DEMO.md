@@ -7,7 +7,7 @@ Bu belge, çalışan `sentiric-knowledge-service`'in yeteneklerini, `governance`
 1.  Tüm Sentiric platformunun `sentiric-infrastructure` reposundaki `docker compose up --build -d` komutuyla çalışır durumda olması gerekmektedir.
 2.  Servisin `/health` endpoint'inin `{"status":"ok"}` yanıtı verdiğinden emin olun:
     ```bash
-    curl http://localhost:5055/health
+    curl http://localhost:50055/health
     ```
 
 ---
@@ -23,11 +23,11 @@ Aşağıdaki komutları yeni bir terminalde çalıştırarak servisin farklı `t
 
 *   **Acil durum protokolünü sorgula:**
     ```bash
-    curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"bilincim kapalı ne yapmalıyım?\", \"tenant_id\": \"sentiric_health\"}"
+    curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"bilincim kapalı ne yapmalıyım?\", \"tenant_id\": \"sentiric_health\"}"
     ```
 *   **Veritabanından hizmet fiyatı sorgula:**
     ```bash
-    curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"vip check-up için ödeme gerekli mi?\", \"tenant_id\": \"sentiric_health\"}"
+    curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"vip check-up için ödeme gerekli mi?\", \"tenant_id\": \"sentiric_health\"}"
     ```
 </details>
 
@@ -36,12 +36,12 @@ Aşağıdaki komutları yeni bir terminalde çalıştırarak servisin farklı `t
 
 *   **Otel hakkında bilgi al:**
     ```bash
-    curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"jakuzili odanız var mı?\", \"tenant_id\": \"sentiric_travel\"}"
+    curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"jakuzili odanız var mı?\", \"tenant_id\": \"sentiric_travel\"}"
     ```
 *   **Canlı olarak Google Travel'dan otel önerisi al (Şu anda Windows'ta desteklenmiyor):**
     *Not: Bu özellik, Windows'taki bir `asyncio` sınırlaması nedeniyle şu anda yalnızca Docker (Linux) ortamında çalışmaktadır. Yerel Windows geliştirme ortamında hata verecektir.*
     ```bash
-    curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"Antalyada gecelik fiyatı uygun, iyi puanlı bir otel önerir misin?\", \"tenant_id\": \"sentiric_travel\"}"
+    curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"Antalyada gecelik fiyatı uygun, iyi puanlı bir otel önerir misin?\", \"tenant_id\": \"sentiric_travel\"}"
     ```
 </details>
 
@@ -50,7 +50,7 @@ Aşağıdaki komutları yeni bir terminalde çalıştırarak servisin farklı `t
 
 *   **Menü içeriğini sorgula:**
     ```bash
-    curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"karışık pizzada ne var?\", \"tenant_id\": \"sentiric_eats\"}"
+    curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"karışık pizzada ne var?\", \"tenant_id\": \"sentiric_eats\"}"
     ```
 </details>
 
@@ -59,7 +59,7 @@ Aşağıdaki komutları yeni bir terminalde çalıştırarak servisin farklı `t
 
 *   **Etkinlikleri sorgula:**
     ```bash
-    curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"zorluda hangi konser var?\", \"tenant_id\": \"sentiric_events\"}"
+    curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"zorluda hangi konser var?\", \"tenant_id\": \"sentiric_events\"}"
     ```
 </details>
 
@@ -69,4 +69,4 @@ Aşağıdaki komutları yeni bir terminalde çalıştırarak servisin farklı `t
 *Bu test, bir kiracının başka bir kiracının verisine erişemediğini doğrular.*
 ```bash
 # Sentiric Health tenant'ında, otel bilgisi arıyoruz.
-curl -X POST http://localhost:5055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"jakuzili odanız var mı?\", \"tenant_id\": \"sentiric_health\"}"
+curl -X POST http://localhost:50055/api/v1/query -H "Content-Type: application/json" -d "{\"query\": \"jakuzili odanız var mı?\", \"tenant_id\": \"sentiric_health\"}"

@@ -5,7 +5,7 @@ import httpx
 from httpx import AsyncClient
 
 # Test edilecek servisin adresini ortam değişkeninden al, yoksa varsayılan kullan
-BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:5055")
+BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:50055")
 API_URL = f"{BASE_URL}/api/v1/query"
 
 # Pytest'i asenkron testler için yapılandır

@@ -19,7 +19,7 @@
 
  ( yerel )
  ```bash
-uvicorn app.main:app --reload --port 5055
+uvicorn app.main:app --reload --port 50055
 ```
 
  (Docker ile)
@@ -29,7 +29,7 @@ Bu servis, Sentiric platformunun bir parçasıdır ve en kolay şekilde `sentiri
 1.  **Platformu Başlat:** `sentiric-infrastructure` dizininde `docker compose up --build -d` komutunu çalıştırın.
 2.  **Servisin Sağlığını Kontrol Et:**
     ```bash
-    curl http://localhost:5055/health
+    curl http://localhost:50055/health
     ```
     `{"status":"ok", "project":"Sentiric Knowledge Service"}` yanıtını görmelisiniz.
 

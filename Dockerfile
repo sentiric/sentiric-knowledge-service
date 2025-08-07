@@ -38,7 +38,7 @@ COPY ./app ./app
 RUN mkdir -p /app/data
 
 # API sunucusunun çalışacağı port
-EXPOSE 5055
+EXPOSE 50055
 
 # Uvicorn ile uygulamayı başlat
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5055"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "50055"]
