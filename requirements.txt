@@ -26,5 +26,5 @@ requests
 # PostgreSQL
 psycopg2-binary
 
-# 
-playwright
+# PLAYWRIGHT ARTIK ZORUNLU DEĞİL. İsteğe bağlı kurulum için README.md'ye bakınız.
+# playwright 

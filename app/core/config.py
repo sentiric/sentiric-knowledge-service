@@ -1,19 +1,36 @@
+# app/core/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 class Settings(BaseSettings):
+    """
+    Uygulamanın tüm yapılandırmasını ortam değişkenlerinden ve .env dosyasından
+    yöneten merkezi sınıf.
+    """
+    # Proje Meta Verileri
     PROJECT_NAME: str = "Sentiric Knowledge Service"
     API_V1_STR: str = "/api/v1"
-    ENV: str = "production"
-    LOG_LEVEL: str = "INFO"
+
+    # Ortam Ayarları
+    ENV: str = Field("production", validation_alias="ENV")
+    LOG_LEVEL: str = Field("INFO", validation_alias="LOG_LEVEL")
+
+    # Veritabanı Bağlantıları
+    POSTGRES_URL: str = Field(validation_alias="POSTGRES_URL")
+    VECTOR_DB_HOST: str = Field("qdrant", validation_alias="VECTOR_DB_HOST")
+    VECTOR_DB_PORT: int = Field(6333, validation_alias="VECTOR_DB_PORT")
     
-    POSTGRES_URL: str
-    
-    VECTOR_DB_HOST:  str = "qdrant"
-    VECTOR_DB_PORT: int = 6333
-    VECTOR_DB_COLLECTION_NAME: str = "sentiric_kb"
+    # RAG Modeli Ayarları
+    # --- DEĞİŞİKLİK BURADA ---
+    # Alan adını .env dosyasındakiyle ve kullanım yerleriyle tutarlı hale getiriyoruz.
+    EMBEDDING_MODEL_NAME: str = Field("all-MiniLM-L6-v2", validation_alias="EMBEDDING_MODEL_NAME")
     VECTOR_DB_COLLECTION_PREFIX: str = "sentiric_kb_"
-    VECTOR_DB_EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
 
-    model_config = SettingsConfigDict(env_file=".env", extra='ignore')
+    # API Sunucusu Ayarları
+    KNOWLEDGE_SERVICE_PORT: int = Field(5055, validation_alias="KNOWLEDGE_SERVICE_PORT")
 
+    # Pydantic'e .env dosyasını okumasını ve büyük/küçük harf duyarsız olmasını söyler
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore', case_sensitive=False)
+
+# Uygulama boyunca kullanılacak tek bir ayar nesnesi
 settings = Settings()

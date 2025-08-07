@@ -1,6 +1,17 @@
+# app/main.py
+import sys
+import asyncio
+import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from prometheus_fastapi_instrumentator import Instrumentator
+from structlog.contextvars import bind_contextvars, clear_contextvars
+
+# --- YENİ EKLENEN KISIM: WINDOWS ASYNCIO DÜZELTMESİ ---
+# Bu blok, diğer tüm importlardan önce, en başta olmalıdır.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+# --- BİTTİ ---
 
 from app.api.v1.endpoints import router as api_v1_router
 from app.core.config import settings
@@ -9,22 +20,28 @@ from app.services.indexing_service import run_indexing
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Uygulama başladığında çalışacak kod
-    logger.info("Uygulama başlıyor...")
-    logger.info("Bilgi bankası indeksleniyor...")
-    run_indexing()
-    logger.info("İndeksleme tamamlandı.")
+    logger.info("Uygulama başlıyor...", env=settings.ENV, log_level=settings.LOG_LEVEL)
+    logger.info("Bilgi bankası ilk indeksleme çalıştırılıyor...")
+    await run_indexing()
+    logger.info("İlk indeksleme tamamlandı.")
     yield
-    # Uygulama kapandığında çalışacak kod
     logger.info("Uygulama kapanıyor.")
 
-app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
+app = FastAPI(title=settings.PROJECT_NAME, version="1.0.0", lifespan=lifespan)
 
-# Metrikleri otomatik olarak expose et
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next) -> Response:
+    clear_contextvars()
+    request_id = request.headers.get("X-Request-ID") or request.headers.get("X-Trace-ID") or str(uuid.uuid4())
+    bind_contextvars(request_id=request_id)
+    logger.info("http.request.started", http_method=request.method, http_path=request.url.path, remote_addr=request.client.host if request.client else "unknown")
+    response = await call_next(request)
+    logger.info("http.request.finished", http_status_code=response.status_code)
+    return response
+
 Instrumentator().instrument(app).expose(app)
-
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "project": settings.PROJECT_NAME}

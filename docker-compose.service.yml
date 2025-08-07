@@ -8,7 +8,7 @@ volumes:
   qdrant_data:
 
 services:
-  # VERİ KATMANI
+  # === POSTGRES ===
   postgres:
     image: postgres:16-alpine
     env_file:
@@ -16,21 +16,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../sentiric-infrastructure/postgres-init:/docker-entrypoint-initdb.d
-    # ports:
-    #   - "${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}"
+    ports:
+      - "${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}"
     networks:
       - sentiric-net
     profiles:
       - default
       - data
     restart: always
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5       
+      retries: 5
 
+  # === QDRANT ===
   qdrant:
     image: qdrant/qdrant:latest
     env_file:
@@ -45,22 +45,37 @@ services:
     profiles:
       - default
       - data
+    # DİKKAT: Qdrant’ın kendi healthcheck’i yok – kaldırıldı
 
-    
+  # === QDRANT HEALTHCHECK ===
+  qdrant-healthcheck:
+    image: curlimages/curl:latest
+    networks:
+      - sentiric-net
+    depends_on:
+      - qdrant
+    entrypoint: [ "sh", "-c", "while ! curl -sf http://qdrant:6333/healthz; do sleep 2; done; sleep 9999999" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://qdrant:6333/healthz" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - default
+      - data
+
+
+  # === KNOWLEDGE SERVICE ===
   knowledge-service:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: sentiric-knowledge-service   
-              
     env_file:
       - ./.env.docker
-    
-    # YENİ: Yerel 'data' klasörünü container içindeki '/app/data' klasörüne bağlıyoruz.
     volumes:
       - ./data:/app/data
-
     ports:
       - "${KNOWLEDGE_SERVICE_PORT}:${KNOWLEDGE_SERVICE_PORT}"
     networks:
@@ -69,12 +84,8 @@ services:
       - default
       - ai
     restart: always
-
-    # YENİ EKLENEN KISIM:
-    # Bu servisin başlamadan önce hem qdrant'ın hem de postgres'in
-    # tamamen sağlıklı ve hazır olmasını bekle.
     depends_on:
-      qdrant:
-        condition: service_started # Qdrant'ın healthcheck'i yok, started yeterli
+      qdrant-healthcheck:
+        condition: service_healthy
       postgres:
-        condition: service_healthy # Postgres'in healthcheck'i var, healthy olmalı
+        condition: service_healthy

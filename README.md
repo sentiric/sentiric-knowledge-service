@@ -1,39 +1,82 @@
-# Sentiric Knowledge Service
+# 📚 Sentiric Knowledge Service
 
-**Description:** Creates and manages a structured, searchable knowledge base for Sentiric's AI agents, enabling them to retrieve relevant information.
+**Açıklama:** Sentiric'in AI ajanları için çok-kaynaklı ve çok-kiracılı (multi-tenant), yapılandırılmış ve aranabilir bir bilgi tabanı oluşturur ve yönetir. Bu servis, RAG (Retrieval-Augmented Generation) mimarisinin kalbidir.
 
-**Core Responsibilities:**
-*   Ingesting and processing data from various external sources (databases, documents, CRM, websites).
-*   Normalizing, transforming, and indexing data into suitable formats (e.g., vector embeddings, search indexes).
-*   Providing APIs for AI agents to quickly query and retrieve knowledge.
-*   Managing underlying knowledge storage technologies (e.g., vector databases like Pinecone, search engines like Elasticsearch).
+**Temel Sorumluluklar:**
+*   **Dinamik Veri Yükleme:** PostgreSQL'deki `datasources` tablosunu okuyarak, her bir kiracı (tenant) için farklı kaynaklardan (dosyalar, web siteleri, veritabanları) veri toplar.
+*   **Vektör İndeksleme:** Toplanan verileri anlamsal olarak aranabilir vektörlere dönüştürür ve Qdrant veritabanında her kiracı için ayrı bir koleksiyonda saklar.
+*   **Sorgu API'si:** `/api/v1/query` endpoint'i üzerinden, AI ajanlarının belirli bir kiracının bilgi bankasında anlamsal arama yapmasını sağlar.
 
-**Technologies:**
-*   Python (or Java)
-*   Flask/FastAPI (for REST API)
-*   Libraries for data processing, natural language processing (NLP), vector embeddings.
-*   Integration with database/search technologies (e.g., PostgreSQL, Elasticsearch, Pinecone).
-* we can use Sentence Transformers (all-MiniLM-L6-v2) + FAISS 
+**Teknoloji Yığını:**
+*   **Web Çerçevesi:** FastAPI
+*   **Vektör Veritabanı:** Qdrant
+*   **Embedding Modeli:** `sentence-transformers`
+*   **Veri Kaynağı Okuyucuları:** `psycopg2`, `requests`, `BeautifulSoup`, `playwright`
 
-**API Interactions (As an API Provider):**
-*   Exposes a RESTful API for `sentiric-agent-service` to query information.
-*   Consumes data from `sentiric-connectors` to ingest and update knowledge.
+---
 
-**Local Development:**
-1.  Clone this repository: `git clone https://github.com/sentiric/sentiric-knowledge-service.git`
-2.  Navigate into the directory: `cd sentiric-knowledge-service`
-3.  Create a virtual environment and install dependencies: `python -m venv venv && source venv/bin/activate && pip install -r requirements.txt`
-4.  Create a `.env` file from `.env.example` (if any), especially for database/indexer connections.
-5.  Start the service: `python app.py` (or equivalent).
+## 🚀 Hızlı Başlangıç
 
-**Configuration:**
-Refer to `config/` directory and `.env.example` for service-specific configurations, including external data source connections and knowledge base settings.
+ ( yerel )
+ ```bash
+uvicorn app.main:app --reload --port 5055
+```
 
-**Deployment:**
-Designed for containerized deployment (e.g., Docker, Kubernetes), potentially requiring significant storage and processing power for large knowledge bases. Refer to `sentiric-infrastructure`.
+ (Docker ile)
 
-**Contributing:**
-We welcome contributions! Please refer to the [Sentiric Governance](https://github.com/sentiric/sentiric-governance) repository for coding standards and contribution guidelines.
+Bu servis, Sentiric platformunun bir parçasıdır ve en kolay şekilde `sentiric-infrastructure` reposundaki `docker-compose.yml` ile çalıştırılır.
 
-**License:**
-This project is licensed under the [License](LICENSE).
+1.  **Platformu Başlat:** `sentiric-infrastructure` dizininde `docker compose up --build -d` komutunu çalıştırın.
+2.  **Servisin Sağlığını Kontrol Et:**
+    ```bash
+    curl http://localhost:5055/health
+    ```
+    `{"status":"ok", "project":"Sentiric Knowledge Service"}` yanıtını görmelisiniz.
+
+---
+
+## 🤖 Demo ve Kullanım Senaryoları
+
+Servisin "Genesis Demo" ile gelen yeteneklerini canlı olarak test etmek ve farklı kullanım senaryolarını görmek için lütfen aşağıdaki rehberi inceleyin:
+
+➡️ **[Canlı Demo ve Test Rehberi (DEMO.md)](DEMO.md)**
+
+---
+
+## 🧪 Otomatize Testleri Çalıştırma
+
+Geliştirme ortamında, servisin doğru çalıştığını doğrulamak için `pytest` kullanabilirsiniz.
+
+1.  **Geliştirme Bağımlılıklarını Kurun:**
+    ```bash
+    pip install -r requirements-dev.txt
+    ```
+2.  **Testleri Çalıştırın:** (Platformun Docker Compose ile çalışır durumda olduğundan emin olun)
+    ```bash
+    pytest -v
+    ```
+    Bu komut, `tests/` klasöründeki tüm testleri otomatik olarak bulup çalıştıracaktır.
+
+---
+
+## 🧑‍💻 Geliştiriciler İçin Ek Notlar
+
+### Opsiyonel: Google Travel Loader'ı Aktif Etme
+
+`google_travel_loader`, dinamik web sitelerinden veri çekmek için `playwright` kütüphanesini kullanır. Bu kütüphane ve bağımlı olduğu tarayıcılar, Docker imaj boyutunu büyük ölçüde artırdığı için varsayılan kurulumda bulunmazlar.
+
+Bu özelliği yerel geliştirme ortamınızda aktif etmek için:
+
+1.  Gerekli Python paketini kurun:
+    ```bash
+    pip install playwright
+    ```
+2.  Gerekli tarayıcıları indirin ve kurun:
+    ```bash
+    playwright install --with-deps chromium
+    ```
+3.  `sentiric-infrastructure/postgres-init/04_genesis_demo_data.sql` dosyasında `google_travel` veri kaynağını tanımlayan satırın başındaki yorum işaretini (`--`) kaldırın ve platformu yeniden başlatın.
+
+## 🤝 Katkıda Bulunma
+
+Katkılarınızı bekliyoruz! Lütfen projenin ana [Sentiric Governance](https://github.com/sentiric/sentiric-governance) reposundaki kodlama standartlarına ve katkıda bulunma rehberine göz atın.
