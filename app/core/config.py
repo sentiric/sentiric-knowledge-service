@@ -1,6 +1,7 @@
 # app/core/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from typing import Optional # YENİ
 
 class Settings(BaseSettings):
     """
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     POSTGRES_URL: str = Field(validation_alias="POSTGRES_URL")
     VECTOR_DB_HOST: str = Field("qdrant", validation_alias="VECTOR_DB_HOST")
     VECTOR_DB_PORT: int = Field(6333, validation_alias="VECTOR_DB_PORT")
+    QDRANT_API_KEY: Optional[str] = Field(None, validation_alias="QDRANT_API_KEY") # YENİ: API Key'i opsiyonel olarak ekle
     
     # RAG Modeli Ayarları
     # --- DEĞİŞİKLİK BURADA ---
@@ -32,5 +34,4 @@ class Settings(BaseSettings):
     # Pydantic'e .env dosyasını okumasını ve büyük/küçük harf duyarsız olmasını söyler
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore', case_sensitive=False)
 
-# Uygulama boyunca kullanılacak tek bir ayar nesnesi
 settings = Settings()
