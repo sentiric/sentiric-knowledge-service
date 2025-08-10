@@ -15,7 +15,7 @@ services:
       - ./.env.docker
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../sentiric-infrastructure/postgres-init:/docker-entrypoint-initdb.d
+      - ../sentiric-config/postgres-init:/docker-entrypoint-initdb.d
     ports:
       - "${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}"
     networks:
