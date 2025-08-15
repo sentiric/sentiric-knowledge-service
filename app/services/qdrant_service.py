@@ -3,7 +3,7 @@ from qdrant_client import QdrantClient, models
 from app.core.config import settings
 from functools import lru_cache
 from app.services.embedding_service import get_embedding_model
-from app.core.logging import logger # Logger'ı import et
+from app.core.logging import logger
 
 @lru_cache(maxsize=1)
 def get_qdrant_client():
@@ -29,7 +29,6 @@ def setup_collection(collection_name: str):
     client = get_qdrant_client()
     model = get_embedding_model()
     try:
-        # DÜZELTME: Koleksiyon listesini alıp içinde var mı diye bakmak daha güvenilir.
         collections_response = client.get_collections()
         collection_names = [c.name for c in collections_response.collections]
         
@@ -51,6 +50,4 @@ def setup_collection(collection_name: str):
         logger.error("Koleksiyon oluşturulurken veya kontrol edilirken hata oluştu.", 
                      error=str(e), 
                      collection_name=collection_name)
-        # Hata durumunda uygulamanın çökmemesi için hatayı yutuyoruz.
-        # Üretim ortamında bu durum daha dikkatli izlenmelidir.
         pass
