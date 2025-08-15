@@ -3,43 +3,41 @@ from qdrant_client import QdrantClient, models
 from app.core.config import settings
 from functools import lru_cache
 from app.services.embedding_service import get_embedding_model
+from app.core.logging import logger # Logger'ı import et
 
 @lru_cache(maxsize=1)
 def get_qdrant_client():
-    # --- DEĞİŞİKLİK BURADA: Qdrant Cloud için tam yapılandırma ---
-    
-    # Eğer bir API anahtarı tanımlıysa, bu Qdrant Cloud demektir.
     if settings.QDRANT_API_KEY:
-        # Bulut ortamında HTTPS kullanmalıyız.
         client = QdrantClient(
             host=settings.VECTOR_DB_HOST, 
             port=settings.VECTOR_DB_PORT,
             api_key=settings.QDRANT_API_KEY,
-            https=True  # <-- EN KRİTİK DEĞİŞİKLİK
+            https=True
         )
     else:
-        # Yerel ortamda (API anahtarı yok), standart HTTP kullanıyoruz.
         client = QdrantClient(
             host=settings.VECTOR_DB_HOST, 
             port=settings.VECTOR_DB_PORT
         )
-        
     return client
 
-# ... (setup_collection fonksiyonu aynı kalacak, hiçbir değişiklik yok) ...
 def setup_collection(collection_name: str):
+    """
+    Koleksiyonun var olup olmadığını kontrol eder. Eğer yoksa, oluşturur.
+    Mevcut bir koleksiyonu silmez.
+    """
     client = get_qdrant_client()
     model = get_embedding_model()
     try:
-        # get_collection hataya neden oluyor, çünkü 404'ü istisna olarak fırlatıyor.
-        # Daha güvenilir bir yöntem, koleksiyon listesini alıp içinde var mı diye bakmaktır.
+        # DÜZELTME: Koleksiyon listesini alıp içinde var mı diye bakmak daha güvenilir.
         collections_response = client.get_collections()
         collection_names = [c.name for c in collections_response.collections]
-        if collection_name in collection_names:
-            # Koleksiyon zaten var, bir şey yapma.
-            return
         
-        # Koleksiyon yoksa, yeniden oluştur.
+        if collection_name in collection_names:
+            logger.info("Koleksiyon zaten mevcut, oluşturma atlanıyor.", collection_name=collection_name)
+            return
+
+        logger.info("Koleksiyon mevcut değil, yeni koleksiyon oluşturuluyor.", collection_name=collection_name)
         client.recreate_collection(
             collection_name=collection_name,
             vectors_config=models.VectorParams(
@@ -47,12 +45,12 @@ def setup_collection(collection_name: str):
                 distance=models.Distance.COSINE
             ),
         )
+        logger.info("Koleksiyon başarıyla oluşturuldu.", collection_name=collection_name)
 
     except Exception as e:
         logger.error("Koleksiyon oluşturulurken veya kontrol edilirken hata oluştu.", 
                      error=str(e), 
                      collection_name=collection_name)
-        # Hata durumunda uygulamayı çökertmek yerine devam etmesini sağlamak için
-        # hatayı yutabilir veya özel bir istisna fırlatabiliriz.
-        # Şimdilik devam etmesine izin verelim.
+        # Hata durumunda uygulamanın çökmemesi için hatayı yutuyoruz.
+        # Üretim ortamında bu durum daha dikkatli izlenmelidir.
         pass
