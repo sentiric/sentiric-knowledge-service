@@ -1,15 +1,54 @@
-# Python
+# __pycache__ klasörleri ve bytecode dosyaları
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-.venv/
-venv/
 
-# IDE / Editor
+# Sanal ortam klasörleri
+env/
+venv/
+ENV/
+.venv/
+.python-version
+
+# Paketleme ile ilgili geçici dosyalar
+*.egg-info/
+.eggs/
+*.egg
+
+# Git dosyaları
+.git
+.gitignore
+
+# IDE/editor dosyaları
 .vscode/
 .idea/
+*.swp
 
-# Local env
+# Sistem dosyaları
+.DS_Store
+Thumbs.db
+
+# Log dosyaları
+*.log
+
+# Ortam değişken dosyaları
 .env
+.env.*
+
+# Test çıktıları ve coverage
+htmlcov/
+.coverage
+.tox/
+.nox/
+pytest_cache/
+coverage.xml
+*.cover
+*.py,cover
+
+# Jupyter Notebook checkpoint dosyaları
+.ipynb_checkpoints/
+
+# Docker-compose vs.
+docker-compose.yml
+docker-compose.override.yml
