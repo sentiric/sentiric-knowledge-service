@@ -1,4 +1,4 @@
-# app/services/qdrant_service.py
+# sentiric-knowledge-service/app/services/qdrant_service.py
 from qdrant_client import QdrantClient, models
 from app.core.config import settings
 from functools import lru_cache
@@ -7,18 +7,24 @@ from app.core.logging import logger
 
 @lru_cache(maxsize=1)
 def get_qdrant_client():
+    # Artırılmış timeout süresi (saniye)
+    QDRANT_TIMEOUT = 60.0
+
     if settings.QDRANT_API_KEY:
         client = QdrantClient(
             host=settings.VECTOR_DB_HOST, 
             port=settings.VECTOR_DB_PORT,
             api_key=settings.QDRANT_API_KEY,
-            https=True
+            https=True,
+            timeout=QDRANT_TIMEOUT # YENİ
         )
     else:
         client = QdrantClient(
             host=settings.VECTOR_DB_HOST, 
-            port=settings.VECTOR_DB_PORT
+            port=settings.VECTOR_DB_PORT,
+            timeout=QDRANT_TIMEOUT # YENİ
         )
+    logger.info("Qdrant istemcisi oluşturuldu.", timeout=QDRANT_TIMEOUT)
     return client
 
 def setup_collection(collection_name: str):
@@ -50,4 +56,6 @@ def setup_collection(collection_name: str):
         logger.error("Koleksiyon oluşturulurken veya kontrol edilirken hata oluştu.", 
                      error=str(e), 
                      collection_name=collection_name)
+        # Hata durumunda programın çökmesini engellemek için hatayı yutuyoruz.
+        # Bu, servisin indeksleme başarısız olsa bile çalışmaya devam etmesini sağlar.
         pass

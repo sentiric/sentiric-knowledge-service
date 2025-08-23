@@ -1,4 +1,4 @@
-# app/main.py
+# sentiric-knowledge-service/app/main.py
 import sys
 import asyncio
 import uuid
@@ -7,11 +7,8 @@ from fastapi import FastAPI, Request, Response
 from prometheus_fastapi_instrumentator import Instrumentator
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
-# --- YENİ EKLENEN KISIM: WINDOWS ASYNCIO DÜZELTMESİ ---
-# Bu blok, diğer tüm importlardan önce, en başta olmalıdır.
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-# --- BİTTİ ---
 
 from app.api.v1.endpoints import router as api_v1_router
 from app.core.config import settings
@@ -22,8 +19,15 @@ from app.services.indexing_service import run_indexing
 async def lifespan(app: FastAPI):
     logger.info("Uygulama başlıyor...", env=settings.ENV, log_level=settings.LOG_LEVEL)
     logger.info("Bilgi bankası ilk indeksleme çalıştırılıyor...")
-    await run_indexing()
-    logger.info("İlk indeksleme tamamlandı.")
+    
+    # YENİ: Hata yönetimi bloğu
+    try:
+        await run_indexing()
+        logger.info("İlk indeksleme tamamlandı.")
+    except Exception as e:
+        logger.error("Başlangıç indekslemesi sırasında kritik hata oluştu. Servis çalışmaya devam edecek ancak RAG yetenekleri kısıtlı olabilir.", error=str(e), exc_info=True)
+        # Hata olmasına rağmen yield'e devam ederek uygulamanın çökmesini engelliyoruz.
+    
     yield
     logger.info("Uygulama kapanıyor.")
 
