@@ -1,5 +1,8 @@
+### File: `sentiric-knowledge-service/app/loaders/postgres_loader.py`
+
 from .base import BaseLoader
 from app.db.session import get_db_connection
+from psycopg2 import sql # YENİ: Güvenli sorgu oluşturmak için import
 
 class PostgresLoader(BaseLoader):
     def load(self, uri: str) -> list[dict]:
@@ -10,10 +13,12 @@ class PostgresLoader(BaseLoader):
         documents = []
         try:
             with conn.cursor() as cur:
-                # GÜVENLİK NOTU: Gerçek bir uygulamada, 'uri' doğrudan sorguya eklenmemeli,
-                # SQL injection'ı önlemek için beyaz listeden kontrol edilmelidir.
-                # Bu demo için güvenli kabul ediyoruz.
-                cur.execute(f"SELECT * FROM {uri}")
+                # GÜVENLİK DÜZELTMESİ: SQL enjeksiyonunu önlemek için sorguyu güvenli bir şekilde oluştur.
+                # 'uri' artık bir SQL tanımlayıcısı (Identifier) olarak ele alınır,
+                # rastgele bir komut olarak değil.
+                query = sql.SQL("SELECT * FROM {}").format(sql.Identifier(uri))
+                cur.execute(query)
+                
                 colnames = [desc[0] for desc in cur.description]
                 for row in cur.fetchall():
                     row_dict = dict(zip(colnames, row))
