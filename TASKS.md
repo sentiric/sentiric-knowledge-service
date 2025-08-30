@@ -1,4 +1,4 @@
-# 📚 Sentiric Knowledge Service - Görev Listesi
+# 📚 Sentiric Knowledge Service - Görev Listesi (v1.1 - Optimizasyon)
 
 Bu belge, `knowledge-service`'in geliştirme yol haritasını ve önceliklerini tanımlar.
 
@@ -20,9 +20,21 @@ Bu faz, servisin temel RAG yeteneklerini çoklu kiracı ve çoklu kaynak desteğ
 
 ---
 
-### Faz 2: Gelişmiş Veri Yönetimi ve Sorgulama (Sıradaki Öncelik)
+### **FAZ 2: Gelişmiş Veri Yönetimi ve Optimizasyon (Sıradaki Öncelik)**
 
-Bu faz, veri yönetimini daha dinamik ve sorgulama yeteneklerini daha güçlü hale getirmeyi hedefler.
+**Amaç:** Servisin performansını ve veri yönetimini daha dinamik hale getirmek.
+
+-   [ ] **Görev ID: KS-BUG-01 - Yinelenen Veri Yükleme Sorununu Giderme (YÜKSEK ÖNCELİK)**
+    -   **Durum:** ⬜ **Yapılacak (Sıradaki)**
+    -   **Tahmini Süre:** ~2-3 saat
+    -   **Açıklama:** Başlangıç logları, her tenant için veri kaynaklarının iki kez yüklendiğini gösteriyor. Bu durum, gereksiz veritabanı ve web trafiğine, ayrıca Qdrant'a aynı verinin tekrar tekrar yazılmasına neden olarak performansı düşürmektedir.
+    -   **Kabul Kriterleri:**
+        -   [ ] `app/loaders/__init__.py` ve `app/services/indexing_service.py` dosyaları incelenerek, veri kaynaklarını getiren ve işleyen döngünün neden iki kez çalıştığı tespit edilmelidir.
+        -   [ ] Düzeltme uygulandıktan sonra, servisin başlangıç loglarında her bir tenant ve veri kaynağı için **sadece tek bir** "Kaynak başarıyla yüklendi" logu göründüğü doğrulanmalıdır.
+
+-   [ ] **Görev ID: KS-001 - Re-Indexing Webhook'u**
+    -   **Durum:** ⬜ Planlandı.
+    -   **Açıklama:** Veri kaynakları güncellendiğinde, servisi yeniden başlatmadan bilgi bankasını tazelemek için bir `/api/v1/reindex` endpoint'i oluştur.
 
 -   [ ] **Görev ID: KS-001 - Re-Indexing Webhook'u**
     -   **Açıklama:** Belirli bir kiracının veri kaynaklarını yeniden indekslemek için tetiklenebilecek bir `/api/v1/reindex` webhook endpoint'i oluştur. Bu, bir yönetici `dashboard-ui`'dan bir veri kaynağını güncellediğinde kullanışlı olacaktır.
