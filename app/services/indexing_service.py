@@ -8,14 +8,16 @@ from app.core.logging import logger
 from app.loaders import get_documents_for_tenant
 from app.db.session import get_tenants
 
-# --- KOD GÜNCELLENDİ: DAHA KONTROLLÜ VE TEMİZ LOGLAMA İÇİN ---
+# --- DÜZELTME BAŞLANGICI (KS-BUG-01) ---
 async def run_indexing():
     """
     Tüm tenant'ları SİRALI bir şekilde işleyerek logların karışmasını engeller.
     Her bir tenant'ın kendi veri kaynakları ise PARALEL olarak yüklenir.
+    Yinelenen tenant'ları işlemekten kaçınmak için `set()` kullanılır.
     """
     logger.info("İndeksleme süreci başlatılıyor...")
-    tenants = get_tenants()
+    # get_tenants()'ten dönen listede yinelenenler olabileceği için set'e çeviriyoruz.
+    tenants = sorted(list(set(get_tenants())))
     if not tenants:
         logger.warning("İndekslenecek tenant bulunamadı.")
         return
@@ -29,6 +31,7 @@ async def run_indexing():
         await index_tenant(tenant_id, client, model)
 
     logger.info("Tüm tenantlar için indeksleme tamamlandı.")
+# --- DÜZELTME SONU ---
 
 async def index_tenant(tenant_id, client, model):
     """Tek bir tenant için asenkron indeksleme yapar."""
