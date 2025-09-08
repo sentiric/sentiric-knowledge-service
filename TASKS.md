@@ -1,59 +1,43 @@
-# 📚 Sentiric Knowledge Service - Görev Listesi (v1.1 - Optimizasyon)
+# 📚 Sentiric Knowledge Service - Görev Listesi (v1.2 - Dayanıklılık)
 
-Bu belge, `knowledge-service`'in geliştirme yol haritasını ve önceliklerini tanımlar.
-
----
-
-### Faz 1: Çok-Kiracılı RAG Temeli (Mevcut Durum)
-
-Bu faz, servisin temel RAG yeteneklerini çoklu kiracı ve çoklu kaynak desteği ile sunmasını hedefler.
-
--   [x] **FastAPI Sunucusu:** `/api/v1/query` ve `/health` endpoint'leri.
--   [x] **Çok-Kiracılı İndeksleme:** `datasources` tablosunu okuyarak her `tenant_id` için ayrı bir Qdrant koleksiyonu oluşturma.
--   [x] **Çok-Kaynaklı Veri Yükleyiciler (`loaders`):**
-    -   [x] `FileLoader`: Yerel dosya sisteminden `.txt`, `.md` okuma.
-    -   [x] `WebLoader`: Statik web sayfalarından içerik çekme.
-    -   [x] `PostgresLoader`: Belirtilen PostgreSQL tablolarından veri çekme.
-    -   [x] `GoogleTravelLoader`: Dinamik web sitelerinden veri çekme (opsiyonel).
--   [x] **Asenkron ve Paralel Yükleme:** Bir kiracıya ait tüm veri kaynaklarını `asyncio.gather` ile paralel olarak işleme.
--   [x] **Vektör Arama:** Gelen sorguyu vektöre çevirip ilgili kiracının koleksiyonunda anlamsal arama yapma.
+Bu belge, knowledge-service'in geliştirme yol haritasını ve önceliklerini tanımlar.
 
 ---
 
-### **FAZ 2: Gelişmiş Veri Yönetimi ve Optimizasyon (Sıradaki Öncelik)**
+### **FAZ 1: Çok-Kiracılı RAG Temeli (Mevcut Durum)**
 
-**Amaç:** Servisin performansını ve veri yönetimini daha dinamik hale getirmek.
+**Amaç:** Servisin temel RAG yeteneklerini çoklu kiracı ve çoklu kaynak desteği ile sunmasını sağlamak.
 
--   [ ] **Görev ID: KS-BUG-01 - Yinelenen Veri Yükleme Sorununu Giderme (YÜKSEK ÖNCELİK)**
-    -   **Durum:** ⬜ **Yapılacak (Sıradaki)**
-    -   **Tahmini Süre:** ~2-3 saat
-    -   **Açıklama:** Başlangıç logları, her tenant için veri kaynaklarının iki kez yüklendiğini gösteriyor. Bu durum, gereksiz veritabanı ve web trafiğine, ayrıca Qdrant'a aynı verinin tekrar tekrar yazılmasına neden olarak performansı düşürmektedir.
+-   [x] **Görev ID: KS-CORE-01 - FastAPI Sunucusu:** `/api/v1/query` ve `/health` endpoint'lerini sunar.
+-   [x] **Görev ID: KS-CORE-02 - Çok-Kiracılı İndeksleme:** `datasources` tablosunu okuyarak her `tenant_id` için ayrı bir Qdrant koleksiyonu oluşturur.
+-   [x] **Görev ID: KS-CORE-03 - Çok-Kaynaklı Veri Yükleyiciler:** `FileLoader`, `WebLoader`, `PostgresLoader` gibi farklı kaynaklardan veri okuma yeteneği.
+-   [x] **Görev ID: KS-CORE-04 - Asenkron ve Paralel Yükleme:** Bir kiracıya ait tüm veri kaynaklarını `asyncio.gather` ile paralel olarak işler.
+-   [x] **Görev ID: KS-CORE-05 - Vektör Arama:** Gelen sorguyu vektöre çevirip ilgili kiracının koleksiyonunda anlamsal arama yapar.
+
+---
+
+### **FAZ 2: Dayanıklılık ve Optimizasyon (Mevcut Odak)**
+
+**Amaç:** Servisin başlangıç sırasındaki dayanıklılığını artırmak ve veri yönetimini daha verimli hale getirmek.
+
+-   **Görev ID: KS-BUG-02 - Qdrant Bağlantı Zaman Aşımını Yönetme (KRİTİK)**
+    -   **Durum:** ⬜ **Yapılacak (Öncelik 1)**
+    -   **Problem Tanımı:** Canlı test logları, servisin başlangıçta Qdrant'a bağlanmaya çalışırken `timed out` hatası aldığını ve bu nedenle indeksleme işleminin çökerek servisin RAG yeteneklerini kaybetmesine neden olduğunu göstermektedir.
+    -   **Çözüm Stratejisi:** `app/services/indexing_service.py` içindeki Qdrant ile ilgili tüm işlemleri (`setup_collection`, `client.upsert`) kapsayan bir `try...except` bloğu içine alınmalıdır. Bir `timeout` veya bağlantı hatası yakalandığında, servis çökmemeli, bunun yerine hatayı loglamalı ve bir sonraki tenant'ı işlemeye devam etmelidir. Ayrıca, `qdrant_client`'a daha uzun bir varsayılan `timeout` değeri (örneğin 60 saniye) atanmalıdır.
     -   **Kabul Kriterleri:**
-        -   [ ] `app/loaders/__init__.py` ve `app/services/indexing_service.py` dosyaları incelenerek, veri kaynaklarını getiren ve işleyen döngünün neden iki kez çalıştığı tespit edilmelidir.
+        -   [ ] `qdrant_service.py` içinde `QdrantClient` oluşturulurken `timeout` parametresi artırılmalıdır.
+        -   [ ] `indexing_service.py` içinde Qdrant işlemleri hata yönetimi ile sarmalanmalıdır.
+        -   [ ] Qdrant servisi yavaş başlasa bile, `knowledge-service` çökmeden başlamalı ve loglarda bu durumu belirten bir `WARN` veya `ERROR` mesajı olmalıdır.
+
+-   **Görev ID: KS-BUG-01 - Yinelenen Veri Yükleme Sorununu Giderme**
+    -   **Durum:** ⬜ **Yapılacak (Öncelik 2)**
+    -   **Problem Tanımı:** Başlangıç logları, her tenant için veri kaynaklarının iki kez yüklendiğini gösteriyor. Bu durum, gereksiz kaynak tüketimine neden olmaktadır.
+    -   **Kabul Kriterleri:**
         -   [ ] Düzeltme uygulandıktan sonra, servisin başlangıç loglarında her bir tenant ve veri kaynağı için **sadece tek bir** "Kaynak başarıyla yüklendi" logu göründüğü doğrulanmalıdır.
 
--   [ ] **Görev ID: KS-001 - Re-Indexing Webhook'u**
-    -   **Durum:** ⬜ Planlandı.
-    -   **Açıklama:** Veri kaynakları güncellendiğinde, servisi yeniden başlatmadan bilgi bankasını tazelemek için bir `/api/v1/reindex` endpoint'i oluştur.
-
--   [ ] **Görev ID: KS-001 - Re-Indexing Webhook'u**
-    -   **Açıklama:** Belirli bir kiracının veri kaynaklarını yeniden indekslemek için tetiklenebilecek bir `/api/v1/reindex` webhook endpoint'i oluştur. Bu, bir yönetici `dashboard-ui`'dan bir veri kaynağını güncellediğinde kullanışlı olacaktır.
-    -   **Durum:** ⬜ Planlandı.
-
--   [ ] **Görev ID: KS-002 - Hibrit Arama (Hybrid Search)**
-    -   **Açıklama:** Anlamsal (vektör) aramaya ek olarak, anahtar kelime tabanlı (sparse vector / BM25) aramayı da destekle. Bu, özellikle ürün kodları veya spesifik isimler gibi tam eşleşme gerektiren sorgularda doğruluğu artırır.
-    -   **Durum:** ⬜ Planlandı.
-
--   [ ] **Görev ID: KS-003 - Daha Fazla Veri Yükleyici**
-    -   **Açıklama:** `Notion`, `Google Docs`, `PDF` gibi popüler veri kaynakları için yeni loader'lar geliştir.
-    -   **Durum:** ⬜ Planlandı.
-
 ---
 
-### Faz 3: Güvenlik ve Erişim Kontrolü
+### **FAZ 3: Gelişmiş Veri Yönetimi (Gelecek Vizyonu)**
 
--   [ ] **Görev ID: KS-004 - Doküman Seviyesinde Erişim Kontrolü (ACL)**
-    -   **Açıklama:** Vektör veritabanındaki her bir dokümana meta veri olarak erişim rolleri (`public`, `agent_only`, `admin`) ekle. Sorgu sırasında, sorguyu yapan kullanıcının rolüne göre sadece yetkili olduğu dokümanların dönmesini sağla.
-    -   **Durum:** ⬜ Planlandı.
-    
----
+-   [ ] **Görev ID: KS-FEAT-01 - Re-Indexing Webhook'u:** Veri kaynakları güncellendiğinde, servisi yeniden başlatmadan bilgi bankasını tazelemek için bir `/api/v1/reindex` endpoint'i oluşturmak.
+-   [ ] **Görev ID: KS-FEAT-02 - Hibrit Arama (Hybrid Search):** Anlamsal aramaya ek olarak anahtar kelime tabanlı aramayı da desteklemek.
