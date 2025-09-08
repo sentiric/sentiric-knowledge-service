@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+# app/api/v1/endpoints.py
+
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pydantic import BaseModel, Field
+from typing import Optional
 from app.services.query_service import find_similar_documents
+from app.services.indexing_service import trigger_reindexing # _NEW_
 from app.core.logging import logger
-from app.core.config import settings # DÜZELTME: Eksik olan import bu satır.
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -14,13 +18,36 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     results: list
 
+# _NEW_ Reindex için yeni Pydantic modelleri
+class ReindexRequest(BaseModel):
+    tenant_id: Optional[str] = Field(None, description="Eğer belirtilirse sadece bu tenant yeniden indekslenir. Boş bırakılırsa tüm sistem indekslenir.")
+
+class ReindexResponse(BaseModel):
+    message: str
+    tenant_id: Optional[str]
+
 @router.post("/query", response_model=QueryResponse, tags=["Query"])
 async def query_knowledge_base(request: QueryRequest):
     try:
-        # Sorguyu tenant'a özel koleksiyonda yap
         collection_name = f"{settings.VECTOR_DB_COLLECTION_PREFIX}{request.tenant_id}"
         results = await find_similar_documents(request.query, collection_name, request.top_k)
         return {"results": results}
     except Exception as e:
         logger.error("Sorgu sırasında hata oluştu", error=str(e))
         raise HTTPException(status_code=500, detail="Dahili sunucu hatası")
+
+# _NEW_ Yeni reindex endpoint'i
+@router.post("/reindex", response_model=ReindexResponse, tags=["Admin"])
+async def reindex_knowledge_base(request: ReindexRequest, background_tasks: BackgroundTasks):
+    """
+    Bilgi tabanını yeniden indeksler. Bu işlem uzun sürebileceği için arka planda çalışır.
+    """
+    target = request.tenant_id if request.tenant_id else "ALL"
+    logger.info("Re-index isteği alındı.", target=target)
+    
+    background_tasks.add_task(trigger_reindexing, tenant_id=request.tenant_id)
+    
+    return {
+        "message": "Re-indexing process started in the background.",
+        "tenant_id": request.tenant_id
+    }
