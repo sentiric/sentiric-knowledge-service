@@ -10,42 +10,28 @@ volumes:
 services:
   # === POSTGRES ===
   postgres:
-    image: postgres:16-alpine
-    env_file:
-      - ./.env.docker
+    build: { context: ../sentiric-postgres }
+    env_file: ["${ENV_FILE_PATH}"]
+    ports: ["5432:5432"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../sentiric-config/postgres-init:/docker-entrypoint-initdb.d
-    ports:
-      - "${POSTGRES_DB_PORT}:${POSTGRES_DB_PORT}"
-    networks:
-      - sentiric-net
-    profiles:
-      - default
-      - data
+      - ${CONFIG_REPO_PATH}/postgres-init:/docker-entrypoint-initdb.d
+    networks: [sentiric-net]
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # === QDRANT ===
   qdrant:
-    image: qdrant/qdrant:latest
-    env_file:
-      - ./.env.docker    
-    ports:
-      - "${VECTOR_DB_PORT}:${VECTOR_DB_PORT}"
-    networks:
-      - sentiric-net
-    volumes:
-      - qdrant_data:/qdrant/storage
-    restart: always
-    profiles:
-      - default
-      - data
-    # DİKKAT: Qdrant’ın kendi healthcheck’i yok – kaldırıldı
+    build: { context: ../sentiric-qdrant }
+    env_file: ["${ENV_FILE_PATH}"]
+    ports: ["${VECTOR_DB_PORT:-6333}:6333"]
+    volumes: [qdrant_data:/qdrant/storage]
+    networks: [sentiric-net]
+    restart: always  
 
   # === QDRANT HEALTHCHECK ===
   qdrant-healthcheck:
@@ -67,25 +53,15 @@ services:
 
   # === KNOWLEDGE SERVICE ===
   knowledge-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SERVICE_NAME: sentiric-knowledge-service   
-    env_file:
-      - ./.env.docker
-    volumes:
-      - ./data:/app/data
-    ports:
-      - "${KNOWLEDGE_SERVICE_PORT}:${KNOWLEDGE_SERVICE_PORT}"
-    networks:
-      - sentiric-net
-    profiles:
-      - default
-      - ai
+    build: { context: ../sentiric-knowledge-service }
+    env_file: ["${ENV_FILE_PATH}"]
+    ports: 
+      - "${KNOWLEDGE_SERVICE_PORT:-5055}:5055"
+      - "${KNOWLEDGE_SERVICE_GRPC_PORT:-50055}:50055"
+    volumes: ["./data:/app/data", "stt-model-cache:/root/.cache/torch"]
+    networks: [sentiric-net]
     restart: always
-    depends_on:
-      qdrant-healthcheck:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+    depends_on: { 
+      postgres: { condition: service_healthy }, 
+      qdrant: { condition: service_started }
+    }
