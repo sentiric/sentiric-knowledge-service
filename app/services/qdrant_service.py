@@ -13,7 +13,7 @@ def get_qdrant_client():
     if settings.QDRANT_API_KEY:
         client = QdrantClient(
             host=settings.VECTOR_DB_HOST, 
-            port=settings.VECTOR_DB_PORT,
+            port=settings.VECTOR_DB_HTTP_PORT,
             api_key=settings.QDRANT_API_KEY,
             https=True,
             timeout=QDRANT_TIMEOUT # YENİ
@@ -21,7 +21,7 @@ def get_qdrant_client():
     else:
         client = QdrantClient(
             host=settings.VECTOR_DB_HOST, 
-            port=settings.VECTOR_DB_PORT,
+            port=settings.VECTOR_DB_HTTP_PORT,
             timeout=QDRANT_TIMEOUT # YENİ
         )
     logger.info("Qdrant istemcisi oluşturuldu.", timeout=QDRANT_TIMEOUT)

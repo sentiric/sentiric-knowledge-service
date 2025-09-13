@@ -3,6 +3,12 @@
 # --- STAGE 1: Builder ---
 FROM python:3.11-slim-bullseye AS builder
 
+
+# Build argümanlarını build aşamasında kullanılabilir yap
+ARG GIT_COMMIT="unknown"
+ARG BUILD_DATE="unknown"
+ARG SERVICE_VERSION="0.0.0"
+
 WORKDIR /app
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1 \
@@ -37,9 +43,6 @@ COPY --from=builder ${HF_HOME} ${HF_HOME}
 COPY ./app ./app
 RUN mkdir -p /app/data
 
-# API sunucusunun çalışacağı port
-EXPOSE 5055
-EXPOSE 50055
 
 # Uvicorn ile uygulamayı başlat
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5055"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "12040"]

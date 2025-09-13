@@ -4,7 +4,7 @@ from .base import BaseLoader
 from app.core.logging import logger
 
 # 12-Factor App" prensipleri.
-DATA_DIR = os.getenv("SENTIRIC_DATA_PATH", "data")
+DATA_DIR = os.getenv("KNOWLEDGE_SERVICE_DATA_PATH", "/sentiric-knowledge-data")
 
 class FileLoader(BaseLoader):
     def load(self, uri: str) -> list[dict]:
