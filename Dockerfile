@@ -27,6 +27,13 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 # --- STAGE 2: Production ---
 FROM python:3.11-slim-bullseye
 
+# --- Çalışma zamanı sistem bağımlılıkları ---
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    netcat-openbsd \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* 
+    
 WORKDIR /app
 
 ENV HF_HOME=/app/cache/huggingface \
