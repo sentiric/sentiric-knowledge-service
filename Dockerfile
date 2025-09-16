@@ -37,4 +37,4 @@ COPY ./app ./app
 RUN mkdir -p /app/data
 
 # DÜZELTME: Standart komut formatı
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "12040"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "12040", "--no-access-log"]
