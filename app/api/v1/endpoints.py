@@ -1,14 +1,15 @@
-# app/api/v1/endpoints.py
+# sentiric-knowledge-service/app/api/v1/endpoints.py
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional
+import structlog
 from app.services.query_service import find_similar_documents
-from app.services.indexing_service import trigger_reindexing # _NEW_
-from app.core.logging import logger
+from app.services.indexing_service import trigger_reindexing
 from app.core.config import settings
 
 router = APIRouter()
+log = structlog.get_logger(__name__)
 
 class QueryRequest(BaseModel):
     query: str
@@ -18,7 +19,6 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     results: list
 
-# _NEW_ Reindex için yeni Pydantic modelleri
 class ReindexRequest(BaseModel):
     tenant_id: Optional[str] = Field(None, description="Eğer belirtilirse sadece bu tenant yeniden indekslenir. Boş bırakılırsa tüm sistem indekslenir.")
 
@@ -33,17 +33,16 @@ async def query_knowledge_base(request: QueryRequest):
         results = await find_similar_documents(request.query, collection_name, request.top_k)
         return {"results": results}
     except Exception as e:
-        logger.error("Sorgu sırasında hata oluştu", error=str(e))
+        log.error("Sorgu sırasında hata oluştu", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Dahili sunucu hatası")
 
-# _NEW_ Yeni reindex endpoint'i
 @router.post("/reindex", response_model=ReindexResponse, tags=["Admin"])
 async def reindex_knowledge_base(request: ReindexRequest, background_tasks: BackgroundTasks):
     """
     Bilgi tabanını yeniden indeksler. Bu işlem uzun sürebileceği için arka planda çalışır.
     """
     target = request.tenant_id if request.tenant_id else "ALL"
-    logger.info("Re-index isteği alındı.", target=target)
+    log.info("Re-index isteği alındı.", target=target)
     
     background_tasks.add_task(trigger_reindexing, tenant_id=request.tenant_id)
     

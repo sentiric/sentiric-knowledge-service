@@ -1,62 +1,52 @@
-# app/core/logging.py
-import sys
+# sentiric-knowledge-service/app/core/logging.py
+
 import logging
+import sys
+import os
 import structlog
-from app.core.config import settings
+from structlog.contextvars import merge_contextvars
+from .config import settings
 
-# Statik servis adını eklemek için özel processor
-def add_service_name(logger, method_name, event_dict):
-    event_dict["service"] = settings.PROJECT_NAME
-    return event_dict
-
-def setup_logging():
-    """
-    Sentiric Governance standartlarına uygun, ortama duyarlı loglama kurar.
-    Geliştirme: Renkli, insan odaklı konsol logları.
-    Üretim: Makine tarafından işlenebilir JSON logları.
-    """
-    log_level = settings.LOG_LEVEL.upper()
-
-    # Python'ın standart logging sistemini temel al
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=log_level,
-    )
-
-    # Tüm loglarda bulunacak ortak işlemciler
-    shared_processors = [
-        structlog.contextvars.merge_contextvars,
-        structlog.stdlib.add_logger_name,
+structlog.configure(
+    processors=[
+        merge_contextvars,
         structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-        add_service_name,  # <- BURASI GÜNCEL
-    ]
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
 
-    # Ortama göre son işlemciyi (renderer) seç
-    if settings.ENV == "development":
-        # Geliştirme ortamı için renkli log
-        final_processor = structlog.dev.ConsoleRenderer(colors=True)
-    else:
-        # Üretim ortamı için JSON log
-        final_processor = structlog.processors.JSONRenderer()
-
-    # Tam işlemci zincirini oluştur
-    processors = shared_processors + [final_processor]
-
-    structlog.configure(
-        processors=processors,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
+def setup_logging(log_level: str, env: str):
+    log_level = log_level.upper()
+    
+    formatter = structlog.stdlib.ProcessorFormatter(
+        foreign_pre_chain=[
+            structlog.stdlib.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso", utc=True),
+        ],
+        processor=structlog.dev.ConsoleRenderer() if env == "development" else structlog.processors.JSONRenderer(),
     )
 
-# Uygulama başlangıcında loglamayı kur
-setup_logging()
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+    
+    root_logger = logging.getLogger()
+    root_logger.handlers = []
+    root_logger.addHandler(handler)
+    root_logger.setLevel(log_level)
+    
+    for logger_name in ["uvicorn", "uvicorn.error", "uvicorn.access"]:
+        uvicorn_logger = logging.getLogger(logger_name)
+        uvicorn_logger.handlers = [handler]
+        uvicorn_logger.propagate = False
 
-# Uygulama boyunca kullanılacak logger nesnesi
-logger = structlog.get_logger("sentiric_knowledge_service")
+    logger = structlog.get_logger("sentiric-knowledge-service")
+    logger.info("Logging configured", log_level=log_level, environment=env)
+    return logger
+
+logger = structlog.get_logger()
