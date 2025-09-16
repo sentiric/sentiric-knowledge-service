@@ -1,10 +1,12 @@
+# sentiric-knowledge-service/requirements.txt
+
 # Web Framework
 fastapi
 uvicorn[standard]
 
 # Config & Data Validation
 pydantic
-pydantic-settings
+pydantic-settings  # BU SATIRI EKLEYİN
 python-dotenv
 typing-extensions
 
@@ -25,6 +27,3 @@ requests
 
 # PostgreSQL
 psycopg2-binary
-
-# PLAYWRIGHT ARTIK ZORUNLU DEĞİL. İsteğe bağlı kurulum için README.md'ye bakınız.
-# playwright 
