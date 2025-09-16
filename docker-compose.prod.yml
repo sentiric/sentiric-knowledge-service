@@ -33,7 +33,12 @@ services:
       sentiric-net:
         ipv4_address: ${KNOWLEDGE_SERVICE_IPV4_ADDRESS}   
     restart: always
-    # depends_on: { 
-    #   postgres: { condition: service_healthy },
-    #   qdrant: { condition: service_started }
-    # }     
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12040/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 20s     
+    # depends_on: 
+    #   postgres: { condition: service_healthy }
+    #   qdrant: { condition: service_healthy  }     
