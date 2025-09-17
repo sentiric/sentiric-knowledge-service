@@ -1,42 +1,62 @@
 # sentiric-knowledge-service/app/main.py
-
-import sys
 import asyncio
+import sys
 import uuid
-import os
 from contextlib import asynccontextmanager
+
+import grpc
+import structlog
 from fastapi import FastAPI, Request, Response
 from prometheus_fastapi_instrumentator import Instrumentator
 from structlog.contextvars import bind_contextvars, clear_contextvars
-import structlog
-
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from app.api.v1.endpoints import router as api_v1_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.services.indexing_service import run_indexing
 
+# YENİ: gRPC için gerekli importlar
+from app.grpc_server.service import KnowledgeService
+from sentiric.knowledge.v1 import knowledge_pb2_grpc
+
+# ... (mevcut kod) ...
+
+async def serve_grpc(server: grpc.aio.Server):
+    listen_addr = f"0.0.0.0:{settings.KNOWLEDGE_SERVICE_GRPC_PORT}"
+    server.add_insecure_port(listen_addr)
+    log.info("gRPC sunucusu dinlemeye başlıyor...", address=listen_addr)
+    await server.start()
+    await server.wait_for_termination()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging(log_level=settings.LOG_LEVEL, env=settings.ENV)
     log = structlog.get_logger("lifespan")
     log.info("Application starting up...")
+
+    # YENİ: gRPC sunucusunu başlat
+    grpc_server = grpc.aio.server()
+    knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeService(), grpc_server)
+    grpc_task = asyncio.create_task(serve_grpc(grpc_server))
+
     log.info("Initial knowledge base indexing will run in the background.")
-    
     try:
         await run_indexing()
         log.info("Initial indexing completed.")
     except Exception as e:
-        log.error("Critical error during initial indexing. RAG capabilities might be limited.", error=str(e), exc_info=True)
+        log.error("Critical error during initial indexing.", error=str(e), exc_info=True)
     
     yield
-    log.info("Application shutting down.")
+    
+    log.info("Application shutting down...")
+    await grpc_server.stop(grace=1)
+    grpc_task.cancel()
+
 
 app = FastAPI(title=settings.PROJECT_NAME, version="1.0.0", lifespan=lifespan)
 log = structlog.get_logger(__name__)
 
+# ... (geri kalan middleware, endpoint'ler ve health check'ler aynı kalıyor) ...
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next) -> Response:
     clear_contextvars()

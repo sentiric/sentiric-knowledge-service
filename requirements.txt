@@ -1,12 +1,11 @@
 # sentiric-knowledge-service/requirements.txt
-
 # Web Framework
 fastapi
 uvicorn[standard]
 
 # Config & Data Validation
 pydantic
-pydantic-settings  # BU SATIRI EKLEYİN
+pydantic-settings
 python-dotenv
 typing-extensions
 
@@ -27,3 +26,9 @@ requests
 
 # PostgreSQL
 psycopg2-binary
+
+# YENİ EKLENENLER: gRPC Sunucu Yetenekleri
+grpcio
+grpcio-tools
+protobuf
+sentiric-contracts @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9#subdirectory=gen/python
