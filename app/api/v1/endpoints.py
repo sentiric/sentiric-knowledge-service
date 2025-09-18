@@ -1,4 +1,5 @@
 # sentiric-knowledge-service/app/api/v1/endpoints.py
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional
 import structlog
@@ -28,7 +29,6 @@ class ReindexResponse(BaseModel):
 async def query_knowledge_base(request: QueryRequest):
     try:
         collection_name = f"{settings.VECTOR_DB_COLLECTION_PREFIX}{request.tenant_id}"
-        # DEĞİŞİKLİK: Doğrudan servis fonksiyonunu çağırıyoruz.
         results = await find_similar_documents(request.query, collection_name, request.top_k)
         return {"results": results}
     except Exception as e:
