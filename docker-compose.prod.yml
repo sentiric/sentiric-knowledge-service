@@ -34,11 +34,12 @@ services:
         ipv4_address: ${KNOWLEDGE_SERVICE_IPV4_ADDRESS}   
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:12040/healthz"]
+      test: ["CMD-SHELL", "nc -z localhost 12040 && nc -z localhost 12041"]
       interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 20s     
+      retries: 5
+      # Başlangıç periyodunu biraz uzatalım ki model yüklemeye zamanı olsun.
+      start_period: 45s     
     # depends_on: 
     #   postgres: { condition: service_healthy }
     #   qdrant: { condition: service_healthy  }     
