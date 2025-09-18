@@ -1,6 +1,5 @@
-# sentiric-knowledge-service/app/main.py
 import asyncio
-import sys
+# import sys
 import uuid
 from contextlib import asynccontextmanager
 
@@ -14,14 +13,11 @@ from app.api.v1.endpoints import router as api_v1_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.services.indexing_service import run_indexing
-
-# YENİ: gRPC için gerekli importlar
 from app.grpc_server.service import KnowledgeService
 from sentiric.knowledge.v1 import knowledge_pb2_grpc
 
-# ... (mevcut kod) ...
-
 async def serve_grpc(server: grpc.aio.Server):
+    log = structlog.get_logger(__name__)
     listen_addr = f"0.0.0.0:{settings.KNOWLEDGE_SERVICE_GRPC_PORT}"
     server.add_insecure_port(listen_addr)
     log.info("gRPC sunucusu dinlemeye başlıyor...", address=listen_addr)
@@ -34,7 +30,6 @@ async def lifespan(app: FastAPI):
     log = structlog.get_logger("lifespan")
     log.info("Application starting up...")
 
-    # YENİ: gRPC sunucusunu başlat
     grpc_server = grpc.aio.server()
     knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeService(), grpc_server)
     grpc_task = asyncio.create_task(serve_grpc(grpc_server))
@@ -56,7 +51,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=settings.PROJECT_NAME, version="1.0.0", lifespan=lifespan)
 log = structlog.get_logger(__name__)
 
-# ... (geri kalan middleware, endpoint'ler ve health check'ler aynı kalıyor) ...
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next) -> Response:
     clear_contextvars()

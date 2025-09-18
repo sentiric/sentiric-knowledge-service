@@ -1,4 +1,3 @@
-# sentiric-knowledge-service/requirements.txt
 # Web Framework
 fastapi
 uvicorn[standard]
@@ -23,15 +22,15 @@ sentence-transformers
 # Web Scraping
 beautifulsoup4
 requests
+playwright  # EKLENDİ: Google Travel Loader için gerekli
 
 # PostgreSQL
 psycopg2-binary
 
 # gRPC Sunucu Yetenekleri
-# Versiyonlar artık 'sentiric-contracts-py' tarafından yönetilecek.
 grpcio
 grpcio-tools
 protobuf
 
-# Platform Kontratları (Yeni ve düzeltilmiş versiyonu kullan)
+# Platform Kontratları
 sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.10
