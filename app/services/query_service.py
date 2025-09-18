@@ -1,57 +1,46 @@
-# sentiric-knowledge-service/app/services/qdrant_service.py
-from qdrant_client import QdrantClient, models
-from app.core.config import settings
-from functools import lru_cache
+# sentiric-knowledge-service/app/services/query_service.py
+import asyncio
+import structlog
+from qdrant_client.http.exceptions import UnexpectedResponse
+from app.services.qdrant_service import get_qdrant_client
 from app.services.embedding_service import get_embedding_model
-import structlog # YENİ
 
-log = structlog.get_logger(__name__) # YENİ
+log = structlog.get_logger(__name__)
 
-@lru_cache(maxsize=1)
-def get_qdrant_client():
-    # Artırılmış timeout süresi (saniye)
-    QDRANT_TIMEOUT = 60.0
-
-    if settings.QDRANT_API_KEY:
-        client = QdrantClient(
-            host=settings.VECTOR_DB_HOST, 
-            port=settings.VECTOR_DB_HTTP_PORT,
-            api_key=settings.QDRANT_API_KEY,
-            https=True,
-            timeout=QDRANT_TIMEOUT
-        )
-    else:
-        client = QdrantClient(
-            host=settings.VECTOR_DB_HOST, 
-            port=settings.VECTOR_DB_HTTP_PORT,
-            timeout=QDRANT_TIMEOUT
-        )
-    log.info("Qdrant istemcisi oluşturuldu.", timeout=QDRANT_TIMEOUT)
-    return client
-
-def setup_collection(collection_name: str):
+async def find_similar_documents(query: str, collection_name: str, top_k: int) -> list:
+    """
+    Verilen bir metin sorgusuna anlamsal olarak en yakın dokümanları Qdrant'ta arar.
+    """
     client = get_qdrant_client()
     model = get_embedding_model()
+    
+    # model.encode senkron bir işlem olduğu için ana event loop'u bloklamamak
+    # adına to_thread ile çalıştırılır.
+    query_vector = await asyncio.to_thread(model.encode, query)
+
     try:
-        collections_response = client.get_collections()
-        collection_names = [c.name for c in collections_response.collections]
-        
-        if collection_name in collection_names:
-            log.info("Koleksiyon zaten mevcut, oluşturma atlanıyor.", collection_name=collection_name)
-            return
-
-        log.info("Koleksiyon mevcut değil, yeni koleksiyon oluşturuluyor.", collection_name=collection_name)
-        client.recreate_collection(
+        # client.search de senkron bir I/O operasyonu olduğu için to_thread kullanılır.
+        search_result = await asyncio.to_thread(
+            client.search,
             collection_name=collection_name,
-            vectors_config=models.VectorParams(
-                size=model.get_sentence_embedding_dimension(),
-                distance=models.Distance.COSINE
-            ),
+            query_vector=query_vector.tolist(),
+            limit=top_k,
         )
-        log.info("Koleksiyon başarıyla oluşturuldu.", collection_name=collection_name)
-
+        return search_result
+    except UnexpectedResponse as e:
+        # Eğer sorgulanan koleksiyon (tenant'a ait veri) henüz oluşturulmamışsa,
+        # bu bir sistem hatası değildir. Boş liste dönerek akışın devam etmesini sağlarız.
+        if "not found" in str(e).lower() or "doesn't exist" in str(e).lower():
+            log.warn(
+                "Mevcut olmayan bir koleksiyon için sorgu alındı",
+                collection_name=collection_name,
+                reason="Bu tenant için veritabanında henüz bir veri kaynağı tanımlanmamış olabilir."
+            )
+            return []  # Hata fırlatmak yerine boş liste döndür
+        else:
+            # Diğer beklenmedik Qdrant hatalarını logla ve yeniden fırlat
+            log.error("Qdrant araması sırasında beklenmedik hata", error=str(e), exc_info=True)
+            raise e
     except Exception as e:
-        log.error("Koleksiyon oluşturulurken veya kontrol edilirken hata oluştu.", 
-                     error=str(e), 
-                     collection_name=collection_name)
-        pass
+        log.error("find_similar_documents içinde genel bir hata oluştu", error=str(e), exc_info=True)
+        raise e
