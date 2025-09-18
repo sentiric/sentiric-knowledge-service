@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# DEĞİŞİKLİK BURADA: pip'i güncelle ve torch'u kur
+# pip'i güncelle ve torch'u kur
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
@@ -48,6 +48,11 @@ RUN mkdir -p /app/data
 # Güvenlik için root olmayan kullanıcı oluştur
 RUN addgroup --system --gid 1001 appgroup && \
     adduser --system --no-create-home --uid 1001 --ingroup appgroup appuser
+
+# DEĞİŞİKLİK BURADA: appuser'a /app dizini üzerinde sahiplik ver
+RUN chown -R appuser:appgroup /app
+
+# Kullanıcıyı değiştir
 USER appuser
 
 # Uygulamayı başlat
