@@ -1,10 +1,9 @@
-# sentiric-knowledge-service/app/grpc_server/service.py (DOĞRULAMA AMAÇLI) ==========
+# sentiric-knowledge-service/app/grpc_server/service.py
 import grpc
 import structlog
-from app.api.v1.endpoints import query_knowledge_base_logic  # Mantığı buradan import edelim
 from app.core.config import settings
-
-# Otomatik üretilen gRPC kodlarını import et
+# DEĞİŞİKLİK: Doğru yerden import yapıyoruz
+from app.services.query_service import find_similar_documents 
 from sentiric.knowledge.v1 import knowledge_pb2, knowledge_pb2_grpc
 
 log = structlog.get_logger(__name__)
@@ -16,7 +15,8 @@ class KnowledgeService(knowledge_pb2_grpc.KnowledgeServiceServicer):
         
         try:
             collection_name = f"{settings.VECTOR_DB_COLLECTION_PREFIX}{request.tenant_id}"
-            results = await query_knowledge_base_logic(request.query, collection_name, request.top_k)
+            # DEĞİŞİKLİK: Doğrudan ana iş mantığı fonksiyonunu çağırıyoruz
+            results = await find_similar_documents(request.query, collection_name, request.top_k)
             
             proto_results = []
             for result in results:
