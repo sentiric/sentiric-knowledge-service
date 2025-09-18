@@ -32,5 +32,5 @@ grpcio
 grpcio-tools
 protobuf
 
-# DEĞİŞİKLİK BURADA: Sadece '#subdirectory' kısmı kaldırıldı.
-sentiric-contracts @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9
+# DEĞİŞİKLİK BURADA: Paket adı 'sentiric-contracts-py' olarak düzeltildi ve #egg fragment'ı eklendi.
+sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9#egg=sentiric-contracts-py
