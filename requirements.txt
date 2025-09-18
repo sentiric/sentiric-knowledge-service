@@ -27,11 +27,11 @@ requests
 # PostgreSQL
 psycopg2-binary
 
-# gRPC Sunucu Yetenekleri ve Versiyon Sabitleme
-# gencode v6 ile uyumlu runtime versiyonları
-grpcio>=1.64.1
-grpcio-tools>=1.64.1
-protobuf>=6.32.0,<7.0.0
+# gRPC Sunucu Yetenekleri
+# Versiyonlar artık 'sentiric-contracts-py' tarafından yönetilecek.
+grpcio
+grpcio-tools
+protobuf
 
-# Platform Kontratları
-sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9
+# Platform Kontratları (Yeni ve düzeltilmiş versiyonu kullan)
+sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.10
