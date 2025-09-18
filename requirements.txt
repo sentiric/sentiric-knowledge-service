@@ -28,10 +28,10 @@ requests
 psycopg2-binary
 
 # gRPC Sunucu Yetenekleri ve Versiyon Sabitleme
-# grpcio-tools'un protobuf>=5.26.1 ihtiyacını karşılayan ve contracts ile uyumlu versiyonlar.
-grpcio==1.64.1
-grpcio-tools==1.64.1
-protobuf==5.27.2
+# gencode v6 ile uyumlu runtime versiyonları
+grpcio>=1.64.1
+grpcio-tools>=1.64.1
+protobuf>=6.32.0,<7.0.0
 
 # Platform Kontratları
 sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9
