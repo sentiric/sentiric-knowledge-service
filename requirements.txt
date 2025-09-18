@@ -28,9 +28,10 @@ requests
 psycopg2-binary
 
 # gRPC Sunucu Yetenekleri
-grpcio
-grpcio-tools
-protobuf
+# DEĞİŞİKLİK BURADA: Versiyonları contracts reposu ile senkronize et
+grpcio>=1.64.1
+grpcio-tools>=1.64.1
+protobuf>=4.21.0,<6.0.0
 
-# DEĞİŞİKLİK BURADA: Paket adı 'sentiric-contracts-py' olarak düzeltildi ve #egg fragment'ı eklendi.
-sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9#egg=sentiric-contracts-py
+# DEĞİŞİKLİK BURADA: #egg fragment'ı olmadan daha temiz bir yol deneyelim
+sentiric-contracts-py @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9

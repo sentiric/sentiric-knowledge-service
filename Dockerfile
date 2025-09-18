@@ -7,15 +7,17 @@ WORKDIR /app
 ENV PIP_BREAK_SYSTEM_PACKAGES=1 \
     HF_HOME=/app/cache/huggingface
 
-# DEĞİŞİKLİK BURADA: 'git' komutunu ekliyoruz
+# git'i kur
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# DEĞİŞİKLİK BURADA: pip'i güncelle ve torch'u kur
+RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 COPY requirements.txt .
-# Bu komut artık çalışacak çünkü 'git' mevcut.
+# Bu komut artık doğru versiyonlarla çalışacak
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Model önbellekleme (pre-caching) adımı
