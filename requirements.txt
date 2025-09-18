@@ -27,8 +27,10 @@ requests
 # PostgreSQL
 psycopg2-binary
 
-# YENİ EKLENENLER: gRPC Sunucu Yetenekleri
+# gRPC Sunucu Yetenekleri
 grpcio
 grpcio-tools
 protobuf
-sentiric-contracts @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9#subdirectory=gen/python
+
+# DEĞİŞİKLİK BURADA: Sadece '#subdirectory' kısmı kaldırıldı.
+sentiric-contracts @ git+https://github.com/sentiric/sentiric-contracts.git@v1.8.9
