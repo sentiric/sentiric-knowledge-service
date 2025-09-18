@@ -1,40 +1,57 @@
-# sentiric-knowledge-service/app/services/query_service.py
-
-import asyncio
-from qdrant_client.http import models
-from qdrant_client.http.exceptions import UnexpectedResponse
-from app.services.qdrant_service import get_qdrant_client
+# sentiric-knowledge-service/app/services/qdrant_service.py
+from qdrant_client import QdrantClient, models
+from app.core.config import settings
+from functools import lru_cache
 from app.services.embedding_service import get_embedding_model
-import structlog # structlog'u import et
+import structlog # YENİ
 
-log = structlog.get_logger(__name__) # logger'ı tanımla
+log = structlog.get_logger(__name__) # YENİ
 
-async def find_similar_documents(query: str, collection_name: str, top_k: int) -> list:
+@lru_cache(maxsize=1)
+def get_qdrant_client():
+    # Artırılmış timeout süresi (saniye)
+    QDRANT_TIMEOUT = 60.0
+
+    if settings.QDRANT_API_KEY:
+        client = QdrantClient(
+            host=settings.VECTOR_DB_HOST, 
+            port=settings.VECTOR_DB_HTTP_PORT,
+            api_key=settings.QDRANT_API_KEY,
+            https=True,
+            timeout=QDRANT_TIMEOUT
+        )
+    else:
+        client = QdrantClient(
+            host=settings.VECTOR_DB_HOST, 
+            port=settings.VECTOR_DB_HTTP_PORT,
+            timeout=QDRANT_TIMEOUT
+        )
+    log.info("Qdrant istemcisi oluşturuldu.", timeout=QDRANT_TIMEOUT)
+    return client
+
+def setup_collection(collection_name: str):
     client = get_qdrant_client()
     model = get_embedding_model()
-    
-    query_vector = await asyncio.to_thread(model.encode, query)
-
     try:
-        search_result = await asyncio.to_thread(
-            client.search,
+        collections_response = client.get_collections()
+        collection_names = [c.name for c in collections_response.collections]
+        
+        if collection_name in collection_names:
+            log.info("Koleksiyon zaten mevcut, oluşturma atlanıyor.", collection_name=collection_name)
+            return
+
+        log.info("Koleksiyon mevcut değil, yeni koleksiyon oluşturuluyor.", collection_name=collection_name)
+        client.recreate_collection(
             collection_name=collection_name,
-            query_vector=query_vector.tolist(),
-            limit=top_k,
+            vectors_config=models.VectorParams(
+                size=model.get_sentence_embedding_dimension(),
+                distance=models.Distance.COSINE
+            ),
         )
-        return search_result
-    except UnexpectedResponse as e:
-        # --- YENİ HATA YÖNETİMİ ---
-        # Eğer hata "Not Found" ise, bu bir sistem hatası değil, beklenen bir durumdur.
-        # Boş bir liste dönerek agent-service'in çökmesini engelliyoruz.
-        if "not found" in str(e).lower() or "doesn't exist" in str(e).lower():
-            log.warn(
-                "Query received for a non-existent collection",
-                collection_name=collection_name,
-                reason="No datasources are defined for this tenant in the database."
-            )
-            return [] # Boş liste döndür
-        else:
-            # Diğer beklenmedik Qdrant hatalarını yine de yükselt
-            raise e
-    # --- HATA YÖNETİMİ SONU ---
+        log.info("Koleksiyon başarıyla oluşturuldu.", collection_name=collection_name)
+
+    except Exception as e:
+        log.error("Koleksiyon oluşturulurken veya kontrol edilirken hata oluştu.", 
+                     error=str(e), 
+                     collection_name=collection_name)
+        pass

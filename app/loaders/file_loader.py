@@ -1,20 +1,17 @@
 # app/loaders/file_loader.py
 import os
+import structlog # YENİ
 from .base import BaseLoader
-from app.core.logging import logger
 
-# 12-Factor App" prensipleri.
+log = structlog.get_logger(__name__) # YENİ
 DATA_DIR = os.getenv("KNOWLEDGE_SERVICE_DATA_PATH", "/sentiric-knowledge-data")
 
 class FileLoader(BaseLoader):
     def load(self, uri: str) -> list[dict]:
-        # Artık dosya yolu dinamik olarak belirleniyor.
         filepath = os.path.join(DATA_DIR, uri)
-        logger.info(f"Dosya okunuyor: {filepath}")
+        log.info(f"Dosya okunuyor: {filepath}")
         if not os.path.exists(filepath):
-            # Dosya bulunamadığında hata fırlatmak yerine loglayıp boş liste dönüyoruz.
-            # Bu, uygulamanın çökmesini engeller.
-            logger.error(f"Dosya bulunamadı: {filepath}")
+            log.error(f"Dosya bulunamadı: {filepath}")
             raise FileNotFoundError(f"Dosya bulunamadı: {filepath}")
         
         with open(filepath, 'r', encoding='utf-8') as f:
