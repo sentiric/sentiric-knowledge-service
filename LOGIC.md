@@ -15,12 +15,12 @@
 
 ---
 
-## 2. Temel Çalışma Prensibi: İndeksleme ve Sorgulama
+## 2. Temel Çalışma Prensibi: Asenkron İndeksleme ve Sorgulama
 
 Servis iki ana modda çalışır:
 
-*   **İndeksleme (Başlangıçta):** Servis ilk ayağa kalktığında, PostgreSQL'deki `datasources` tablosunu okur. Her bir kiracı için tanımlanmış tüm veri kaynaklarını (veritabanı tabloları, web siteleri, dosyalar) paralel olarak yükler, bunları anlamsal vektörlere dönüştürür ve Qdrant veritabanında her kiracı için ayrı bir "koleksiyon" (collection) içine kaydeder.
-*   **Sorgulama (Çalışma Zamanında):** Diğer servislerden `/api/v1/query` endpoint'ine bir istek geldiğinde, gelen sorguyu anında bir vektöre dönüştürür ve sadece ilgili kiracının koleksiyonunda anlamsal olarak en benzer dokümanları bularak geri döner.
+*   **Başlatma ve İndeksleme (Asenkron):** Servis ilk ayağa kalktığında, **önce ağ sunucularını (HTTP ve gRPC) hemen başlatır.** Bu sayede `healthcheck`'lere ve bağlantı denemelerine anında yanıt verebilir. Ardından, **arka planda** PostgreSQL'deki `datasources` tablosunu okur. Her bir kiracı için tanımlanmış tüm veri kaynaklarını yükler, bunları anlamsal vektörlere dönüştürür ve Qdrant veritabanında her kiracı için ayrı bir "koleksiyon" içine kaydeder. Bu ağır işlem tamamlanana kadar, servis gelen sorgulara "henüz hazır değilim" (`503 Service Unavailable`) yanıtı döner.
+*   **Sorgulama (Çalışma Zamanında):** İndeksleme tamamlandıktan ve servis "hazır" duruma geçtikten sonra, diğer servislerden gelen sorguları kabul etmeye başlar. Gelen sorguyu anında bir vektöre dönüştürür ve sadece ilgili kiracının koleksiyonunda anlamsal olarak en benzer dokümanları bularak geri döner.
 
 ---
 

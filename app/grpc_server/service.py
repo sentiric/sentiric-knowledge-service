@@ -2,7 +2,6 @@
 import grpc
 import structlog
 from app.core.config import settings
-# DEĞİŞİKLİK: Doğru yerden import yapıyoruz
 from app.services.query_service import find_similar_documents 
 from sentiric.knowledge.v1 import knowledge_pb2, knowledge_pb2_grpc
 
@@ -10,12 +9,19 @@ log = structlog.get_logger(__name__)
 
 class KnowledgeService(knowledge_pb2_grpc.KnowledgeServiceServicer):
     
+    def __init__(self, app):
+        self.app = app
+
     async def Query(self, request: knowledge_pb2.QueryRequest, context) -> knowledge_pb2.QueryResponse:
+        # YENİ: Model hazır mı kontrolü
+        if not getattr(self.app.state, 'model_ready', False):
+            log.warn("gRPC isteği alındı ancak model henüz hazır değil.")
+            await context.abort(grpc.StatusCode.UNAVAILABLE, "Servis başlatılıyor, model henüz hazır değil.")
+
         log.info("gRPC Query isteği alındı", tenant_id=request.tenant_id, query=request.query)
         
         try:
             collection_name = f"{settings.VECTOR_DB_COLLECTION_PREFIX}{request.tenant_id}"
-            # DEĞİŞİKLİK: Doğrudan ana iş mantığı fonksiyonunu çağırıyoruz
             results = await find_similar_documents(request.query, collection_name, request.top_k)
             
             proto_results = []
