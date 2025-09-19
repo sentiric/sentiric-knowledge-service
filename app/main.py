@@ -18,14 +18,45 @@ from sentiric.knowledge.v1 import knowledge_pb2_grpc
 
 SERVICE_NAME = "knowledge-service"
 
+# --- YENİ FONKSİYON: TLS Konfigürasyonunu Yükle ---
+def load_server_credentials():
+    log = structlog.get_logger(__name__)
+    log.info("gRPC için mTLS sertifikaları yükleniyor...")
+    
+    try:
+        private_key = open(settings.KNOWLEDGE_SERVICE_KEY_PATH, 'rb').read()
+        certificate_chain = open(settings.KNOWLEDGE_SERVICE_CERT_PATH, 'rb').read()
+        root_ca = open(settings.GRPC_TLS_CA_PATH, 'rb').read()
+
+        log.info("Tüm sertifika dosyaları başarıyla okundu.")
+        
+        return grpc.ssl_server_credentials(
+            private_key_certificate_chain_pairs=[(private_key, certificate_chain)],
+            root_certificates=root_ca,
+            require_client_auth=True
+        )
+    except FileNotFoundError as e:
+        log.error("Kritik Hata: mTLS sertifika dosyası bulunamadı!", file=e.filename)
+        # Bu durumda uygulamanın başlamaması gerekir.
+        raise e
+    except Exception as e:
+        log.error("Kritik Hata: mTLS sertifikaları yüklenirken bir hata oluştu.", error=str(e))
+        raise e
+
 async def serve_grpc(server: grpc.aio.Server):
     log = structlog.get_logger(__name__)
     listen_addr = f"0.0.0.0:{settings.KNOWLEDGE_SERVICE_GRPC_PORT}"
-    server.add_insecure_port(listen_addr)
-    log.info("gRPC sunucusu dinlemeye başlıyor...", address=listen_addr)
+    
+    # --- DEĞİŞİKLİK: Güvenli port ekle, güvensiz olanı kaldır ---
+    credentials = load_server_credentials()
+    server.add_secure_port(listen_addr, credentials)
+    # server.add_insecure_port(listen_addr) # Bu satırı kaldır veya yorumla
+
+    log.info("Güvenli (mTLS) gRPC sunucusu dinlemeye başlıyor...", address=listen_addr)
     await server.start()
     await server.wait_for_termination()
 
+# ... lifespan ve geri kalan kod aynı kalır, sadece healthcheck'i basitleştirebiliriz.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging(log_level=settings.LOG_LEVEL, env=settings.ENV)
@@ -39,18 +70,13 @@ async def lifespan(app: FastAPI):
         build_date=settings.BUILD_DATE,
     )
 
-    # --- YENİ MANTIK BAŞLANGICI ---
-    # 1. Modelin hazır olmadığını varsayılan olarak ayarla
     app.state.model_ready = False
     log.info("Model durumu 'HAZIR DEĞİL' olarak ayarlandı.")
 
-    # 2. gRPC sunucusunu hemen başlat
     grpc_server = grpc.aio.server()
     knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeService(app), grpc_server)
     grpc_task = asyncio.create_task(serve_grpc(grpc_server))
 
-    # 3. HTTP ve gRPC sunucuları başladıktan sonra, ağır işi arka planda yap
-    # Bu, 'yield'den önce çalışır ve ana olay döngüsünü bloke etmez.
     async def initial_indexing_task():
         log.info("Arka plan indeksleme görevi başlatıldı.")
         try:
@@ -59,21 +85,18 @@ async def lifespan(app: FastAPI):
             log.info("Başlangıç indekslemesi tamamlandı. Model durumu 'HAZIR' olarak ayarlandı.")
         except Exception as e:
             log.critical("Başlangıç indekslemesi sırasında kritik hata.", error=str(e), exc_info=True)
-            # Hata durumunda bile sunucunun çalışmaya devam etmesini sağlayabiliriz,
-            # ama sağlık durumu 'false' kalır.
     
     asyncio.create_task(initial_indexing_task())
     
-    yield # Bu noktada FastAPI sunucusu istekleri kabul etmeye başlar
-    # --- YENİ MANTIK SONU ---
+    yield
     
     log.info("Uygulama kapatılıyor...")
     await grpc_server.stop(grace=1)
     grpc_task.cancel()
 
+
 app_version = settings.SERVICE_VERSION if settings.SERVICE_VERSION else "0.1.0-local"
 app = FastAPI(title=settings.PROJECT_NAME, version=app_version, lifespan=lifespan)
-log = structlog.get_logger(__name__)
 
 # ... (Middleware aynı kalır) ...
 @app.middleware("http")
