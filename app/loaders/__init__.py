@@ -1,12 +1,12 @@
-# app/loaders/__init__.py
+# sentiric-knowledge-service/app/loaders/__init__.py
 import asyncio
-import structlog # YENİ
+import structlog
 from .file_loader import FileLoader
 from .web_loader import WebLoader
 from .postgres_loader import PostgresLoader
 from app.db.session import get_datasources_for_tenant
 
-log = structlog.get_logger(__name__) # YENİ
+log = structlog.get_logger(__name__)
 
 LOADER_MAP = {
     "file": FileLoader(),
@@ -29,8 +29,7 @@ async def get_documents_for_tenant(tenant_id: str) -> list[dict]:
                            type=source_type, tenant_id=tenant_id)
             continue
 
-        # iscoroutinefunction is deprecated in favor of iscoroutine
-        if asyncio.iscoroutine(loader.load) or asyncio.iscoroutinefunction(loader.load):
+        if asyncio.iscoroutinefunction(loader.load):
             tasks.append(loader.load(source_uri))
         else:
             tasks.append(asyncio.to_thread(loader.load, source_uri))

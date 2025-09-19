@@ -1,19 +1,22 @@
+# sentiric-knowledge-service/app/services/indexing_service.py
 import asyncio
 import uuid
+import structlog  # YENİ: structlog import edildi
 from qdrant_client import models
 from app.services.qdrant_service import get_qdrant_client, setup_collection
 from app.services.embedding_service import get_embedding_model
 from app.core.config import settings
-from app.core.logging import logger
 from app.loaders import get_documents_for_tenant
 from app.db.session import get_tenants, update_datasource_timestamp
 
+# YENİ: Logger doğru şekilde tanımlandı
+log = structlog.get_logger(__name__)
 
 async def run_indexing():
-    logger.info("İndeksleme süreci başlatılıyor...")
+    log.info("İndeksleme süreci başlatılıyor...")
     tenants = sorted(list(set(get_tenants())))
     if not tenants:
-        logger.warning("İndekslenecek tenant bulunamadı.")
+        log.warning("İndekslenecek tenant bulunamadı.")
         return
 
     client = get_qdrant_client()
@@ -22,11 +25,11 @@ async def run_indexing():
     for tenant_id in tenants:
         await index_tenant(tenant_id, client, model)
 
-    logger.info("Tüm tenantlar için indeksleme tamamlandı.")
+    log.info("Tüm tenantlar için indeksleme tamamlandı.")
 
 
 async def index_tenant(tenant_id, client, model):
-    tenant_logger = logger.bind(tenant_id=tenant_id)
+    tenant_logger = log.bind(tenant_id=tenant_id)
     tenant_logger.info("Tenant için veri kaynakları işleniyor...")
     
     collection_name = f"{settings.VECTOR_DB_COLLECTION_PREFIX}{tenant_id}"
@@ -77,12 +80,11 @@ async def index_tenant(tenant_id, client, model):
 
 
 async def trigger_reindexing(tenant_id: str | None = None):
-    logger.info("Yeniden indeksleme tetiklendi.", target_tenant=tenant_id or "ALL")
+    log.info("Yeniden indeksleme tetiklendi.", target_tenant=tenant_id or "ALL")
     if tenant_id:
         client = get_qdrant_client()
         model = get_embedding_model()
         await index_tenant(tenant_id, client, model)
     else:
         await run_indexing()
-    logger.info("Yeniden indeksleme tamamlandı.", target_tenant=tenant_id or "ALL")
-    
+    log.info("Yeniden indeksleme tamamlandı.", target_tenant=tenant_id or "ALL")

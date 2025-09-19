@@ -1,9 +1,9 @@
-# app/loaders/file_loader.py
+# sentiric-knowledge-service/app/loaders/file_loader.py
 import os
-import structlog # YENİ
+import structlog
 from .base import BaseLoader
 
-log = structlog.get_logger(__name__) # YENİ
+log = structlog.get_logger(__name__)
 DATA_DIR = os.getenv("KNOWLEDGE_SERVICE_DATA_PATH", "/sentiric-knowledge-data")
 
 class FileLoader(BaseLoader):

@@ -58,7 +58,11 @@ async def lifespan(app: FastAPI):
     grpc_task.cancel()
 
 
-app = FastAPI(title=settings.PROJECT_NAME, version=settings.SERVICE_VERSION, lifespan=lifespan)
+# Eğer SERVICE_VERSION ortam değişkeni ayarlanmamışsa, varsayılan bir değer kullan.
+# Bu, OpenAPI'nin çökmesini engeller.
+app_version = settings.SERVICE_VERSION if settings.SERVICE_VERSION else "0.1.0-local"
+
+app = FastAPI(title=settings.PROJECT_NAME, version=app_version, lifespan=lifespan)
 log = structlog.get_logger(__name__)
 
 @app.middleware("http")

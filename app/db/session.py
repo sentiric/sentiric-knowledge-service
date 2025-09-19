@@ -1,9 +1,9 @@
-# app/db/session.py
+# sentiric-knowledge-service/app/db/session.py
 import psycopg2
-import structlog # YENİ
+import structlog
 from app.core.config import settings
 
-log = structlog.get_logger(__name__) # YENİ
+log = structlog.get_logger(__name__)
 
 def get_db_connection():
     try:
@@ -38,6 +38,7 @@ def get_datasources_for_tenant(tenant_id: str) -> list[dict]:
             conn.close()
 
 def update_datasource_timestamp(datasource_id: int):
+    """Belirtilen veri kaynağının last_indexed_at zaman damgasını günceller."""
     conn = get_db_connection()
     if not conn:
         log.error("Timestamp güncellenemedi: Veritabanı bağlantısı yok.")
