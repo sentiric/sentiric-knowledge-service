@@ -1,4 +1,5 @@
-# app/core/config.py
+# sentiric-knowledge-service/app/core/config.py
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
@@ -16,12 +17,10 @@ class Settings(BaseSettings):
     ENV: str = Field("production", validation_alias="ENV")
     LOG_LEVEL: str = Field("INFO", validation_alias="LOG_LEVEL")
 
-    # --- YENİ EKLENEN GÖZLEMLENEBİLİRLİK ALANLARI ---
-    # Bu değişkenler Dockerfile'dan ENV olarak set edilir ve Pydantic tarafından okunur.
+    # Gözlemlenebilirlik Alanları
     SERVICE_VERSION: str = Field("0.0.0", validation_alias="SERVICE_VERSION")
     GIT_COMMIT: str = Field("unknown", validation_alias="GIT_COMMIT")
     BUILD_DATE: str = Field("unknown", validation_alias="BUILD_DATE")
-    # --- YENİ ALANLAR SONU ---
 
     # Veritabanı Bağlantıları
     POSTGRES_URL: str = Field(validation_alias="POSTGRES_URL")
@@ -37,6 +36,12 @@ class Settings(BaseSettings):
     # API Sunucusu Ayarları
     KNOWLEDGE_SERVICE_HTTP_PORT: int = Field(12040, validation_alias="KNOWLEDGE_SERVICE_HTTP_PORT")
     KNOWLEDGE_SERVICE_GRPC_PORT: int = Field(12041, validation_alias="KNOWLEDGE_SERVICE_GRPC_PORT")
+
+    # --- YENİ: mTLS Sertifika Yolları ---
+    KNOWLEDGE_SERVICE_CERT_PATH: str = Field(validation_alias="KNOWLEDGE_SERVICE_CERT_PATH")
+    KNOWLEDGE_SERVICE_KEY_PATH: str = Field(validation_alias="KNOWLEDGE_SERVICE_KEY_PATH")
+    GRPC_TLS_CA_PATH: str = Field(validation_alias="GRPC_TLS_CA_PATH")
+    # --- DEĞİŞİKLİK SONU ---
     
     # Pydantic'e .env dosyasını okumasını ve büyük/küçük harf duyarsız olmasını söyler
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore', case_sensitive=False)
