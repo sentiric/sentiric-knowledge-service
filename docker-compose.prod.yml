@@ -38,8 +38,9 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
-      # Başlangıç periyodunu biraz uzatalım ki model yüklemeye zamanı olsun.
-      start_period: 45s     
+      # DEĞİŞİKLİK BURADA: Başlangıç periyodunu 10 dakikaya çıkarıyoruz.
+      # Bu, yavaş ağlarda bile modelin indirilip yüklenmesi için yeterli zaman tanıyacaktır.
+      start_period: 10m     
     # depends_on: 
     #   postgres: { condition: service_healthy }
     #   qdrant: { condition: service_healthy  }     
