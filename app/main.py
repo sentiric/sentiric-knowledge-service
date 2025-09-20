@@ -55,7 +55,7 @@ async def serve_grpc(server: grpc.aio.Server):
     
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # lifespan
+    # DEĞİŞİKLİK: setup_logging'i config'den gelen değerlerle çağır.
     setup_logging(log_level=settings.LOG_LEVEL, env=settings.ENV)
     log = structlog.get_logger().bind(service=SERVICE_NAME)
     
