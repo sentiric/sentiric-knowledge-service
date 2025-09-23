@@ -24,13 +24,13 @@ class Settings(BaseSettings):
 
     # Veritabanı Bağlantıları
     POSTGRES_URL: str = Field(validation_alias="POSTGRES_URL")
-    VECTOR_DB_HOST: str = Field("qdrant", validation_alias="VECTOR_DB_HOST")
-    VECTOR_DB_HTTP_PORT: int = Field(6333, validation_alias="VECTOR_DB_HTTP_PORT")
+    VECTOR_DB_HOST: str = Field("qdrant", validation_alias="QDRANT_HOST")
+    VECTOR_DB_HTTP_PORT: int = Field(6333, validation_alias="QDRANT_HTTP_PORT")
     
     QDRANT_API_KEY: Optional[str] = Field(None, validation_alias="QDRANT_API_KEY")
     
     # RAG Modeli Ayarları
-    EMBEDDING_MODEL_NAME: str = Field("all-MiniLM-L6-v2", validation_alias="VECTOR_DB_EMBEDDING_MODEL_NAME")
+    EMBEDDING_MODEL_NAME: str = Field("all-MiniLM-L6-v2", validation_alias="QDRANT_DB_EMBEDDING_MODEL_NAME")
     VECTOR_DB_COLLECTION_PREFIX: str = "sentiric_kb_"
 
     # API Sunucusu Ayarları
