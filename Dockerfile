@@ -17,7 +17,8 @@ ENV PIP_BREAK_SYSTEM_PACKAGES=1 \
     PIP_NO_CACHE_DIR=1 \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
-    PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
+    # DÜZELTME: Cache yolunu root kullanıcısı için doğru ayarlıyoruz
+    PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
 # Gerekli sistem bağımlılıkları ve Poetry kurulumu
 RUN apt-get update && apt-get install -y --no-install-recommends curl build-essential && \
@@ -27,8 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl build-esse
 
 # Sadece bağımlılık tanımlarını kopyala ve kur (Docker build cache'ini optimize eder)
 COPY poetry.lock pyproject.toml ./
+# --- DÜZELTME BURADA ---
+# `playwright install` komutunu `poetry run` ile çalıştırıyoruz.
 RUN poetry install --without dev --no-root --sync && \
-    playwright install --with-deps chromium
+    poetry run playwright install --with-deps chromium
+# --- DÜZELTME SONU ---
 
 # ======================================================================================
 #    STAGE 2: PRODUCTION - Hafif ve güvenli imaj
@@ -64,7 +68,7 @@ RUN addgroup --system --gid 1001 appgroup && \
 
 # Bağımlılıkları, uygulama kodunu ve Playwright tarayıcılarını kopyala
 COPY --from=builder --chown=appuser:appgroup /app/.venv ./.venv
-COPY --from=builder --chown=appuser:appgroup ${PLAYWRIGHT_BROWSERS_PATH} ${PLAYWRIGHT_BROWSERS_PATH}
+COPY --from=builder --chown=appuser:appgroup /root/.cache/ms-playwright ${PLAYWRIGHT_BROWSERS_PATH}
 COPY --chown=appuser:appgroup ./app ./app
 
 # Sahipliği ayarla ve kullanıcıyı değiştir
