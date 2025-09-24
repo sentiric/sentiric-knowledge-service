@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiric Knowledge Service - Test Arayüzü</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Sentiric Knowledge Service</h1>
+            <p>Platformun kurumsal hafızasını (RAG) test edin.</p>
+        </header>
+        
+        <main>
+            <form id="query-form">
+                <div class="form-group">
+                    <label for="tenant-id">Tenant ID</label>
+                    <select id="tenant-id" name="tenant_id" required>
+                        <option value="sentiric_demo">sentiric_demo</option>
+                        <option value="sentiric_health">sentiric_health</option>
+                        <option value="sentiric_travel">sentiric_travel</option>
+                        <option value="sentiric_eats">sentiric_eats</option>
+                        <option value="sentiric_events">sentiric_events</option>
+                        <option value="sentiric_support">sentiric_support</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="query">Sorgu</label>
+                    <textarea id="query" name="query" rows="3" placeholder="Örn: VIP Check-up paketine neler dahildir?" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="top-k">Dönecek Sonuç Sayısı (Top K)</label>
+                    <input type="number" id="top-k" name="top_k" value="3" min="1" max="10">
+                </div>
+                <button type="submit" id="submit-btn">Sorgula</button>
+            </form>
+            <div id="result-container" class="result-container hidden">
+                <h2>Sonuçlar:</h2>
+                <div id="spinner" class="spinner hidden"></div>
+                <div id="result-content"></div>
+                <div id="error-message" class="error hidden"></div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Sentiric "İletişim İşletim Sistemi"</p>
+        </footer>
+    </div>
+    <script src="{{ url_for('static', path='/script.js') }}"></script>
+</body>
+</html>

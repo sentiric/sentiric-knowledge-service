@@ -888,7 +888,7 @@ typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 
 [[package]]
 name = "pydantic-settings"
-version = "2.10.1"
+version = "2.11.0"
 description = "Settings management using Pydantic"
 category = "main"
 optional = false
@@ -1567,7 +1567,7 @@ python-versions = ">=3.9"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.11"
-content-hash = "1a72987770c3df29741d344109aac671934f717b6ea1fe3b66db51d47059f4c9"
+content-hash = "86292e2b60ee669e9298e8af21ae8e83bf2d7628229d9556d950617661c53b79"
 
 [metadata.files]
 annotated-types = []

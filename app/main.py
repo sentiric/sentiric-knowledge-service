@@ -6,8 +6,11 @@ from contextlib import asynccontextmanager
 import grpc
 import structlog
 from fastapi import FastAPI, Request, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from prometheus_fastapi_instrumentator import Instrumentator
 from structlog.contextvars import bind_contextvars, clear_contextvars
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.api.v1.endpoints import router as api_v1_router
 from app.core.config import settings
@@ -23,7 +26,6 @@ def load_server_credentials():
     if not all([settings.KNOWLEDGE_SERVICE_KEY_PATH, settings.KNOWLEDGE_SERVICE_CERT_PATH, settings.GRPC_TLS_CA_PATH]):
         log.warn("mTLS sertifika yolları tam olarak yapılandırılmamış. gRPC sunucusu başlatılamayacak.")
         return None
-    
     log.info("gRPC için mTLS sertifikaları yükleniyor...")
     try:
         private_key = open(settings.KNOWLEDGE_SERVICE_KEY_PATH, 'rb').read()
@@ -41,12 +43,10 @@ def load_server_credentials():
 async def serve_grpc(server: grpc.aio.Server):
     log = structlog.get_logger(__name__)
     listen_addr = f"0.0.0.0:{settings.KNOWLEDGE_SERVICE_GRPC_PORT}"
-    
     credentials = load_server_credentials()
     if not credentials:
         log.warn("gRPC sunucusu için mTLS kimlik bilgileri yüklenemedi, sunucu başlatılmıyor.")
         return
-
     server.add_secure_port(listen_addr, credentials)
     log.info("Güvenli (mTLS) gRPC sunucusu dinlemeye başlıyor...", address=listen_addr)
     await server.start()
@@ -66,21 +66,19 @@ async def run_indexing_background(app: FastAPI):
 async def lifespan(app: FastAPI):
     setup_logging(log_level=settings.LOG_LEVEL, env=settings.ENV)
     log = structlog.get_logger().bind(service=SERVICE_NAME)
-    
     log.info(
         "Uygulama başlatılıyor...",
         project=settings.PROJECT_NAME,
         version=settings.SERVICE_VERSION,
         commit=settings.GIT_COMMIT,
         build_date=settings.BUILD_DATE,
-        mode=settings.KNOWLEDGE_SERVICE_APP_MODE # DÜZELTME
+        mode=settings.KNOWLEDGE_SERVICE_APP_MODE
     )
-
     app.state.model_ready = False
     
     grpc_server = None
     grpc_task = None
-    if settings.KNOWLEDGE_SERVICE_APP_MODE.upper() == "HYBRID": # DÜZELTME
+    if settings.KNOWLEDGE_SERVICE_APP_MODE.upper() == "HYBRID":
         grpc_server = grpc.aio.server()
         knowledge_pb2_grpc.add_KnowledgeServiceServicer_to_server(KnowledgeService(app), grpc_server)
         grpc_task = asyncio.create_task(serve_grpc(grpc_server))
@@ -88,9 +86,7 @@ async def lifespan(app: FastAPI):
         log.info("HTTP_ONLY modunda çalışılıyor, gRPC sunucusu atlandı.")
 
     asyncio.create_task(run_indexing_background(app))
-    
     yield
-    
     log.info("Uygulama kapatılıyor...")
     if grpc_server and grpc_task:
         await grpc_server.stop(grace=1)
@@ -98,11 +94,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.SERVICE_VERSION, lifespan=lifespan)
 
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
+
 @app.middleware("http")
 async def logging_middleware(request: Request, call_next) -> Response:
     log = structlog.get_logger(__name__)
     clear_contextvars()
-    if request.url.path in ["/healthz", "/metrics"]:
+    if request.url.path in ["/healthz", "/metrics", "/static"]:
         return await call_next(request)
     trace_id = request.headers.get("X-Request-ID") or request.headers.get("X-Trace-ID") or str(uuid.uuid4())
     bind_contextvars(trace_id=trace_id)
@@ -113,24 +113,25 @@ async def logging_middleware(request: Request, call_next) -> Response:
 
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
 
+@app.get("/", include_in_schema=False)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
 @app.get("/health", tags=["Health"])
 @app.head("/health")
 def health_check(request: Request):
     log = structlog.get_logger(__name__)
     is_ready = getattr(request.app.state, 'model_ready', False)
     status_code = 200 if is_ready else 503
-    
     response_data = {
         "status": "ok" if is_ready else "loading_model",
         "model_ready": is_ready,
         "project": settings.PROJECT_NAME,
         "version": settings.SERVICE_VERSION,
-        "app_mode": settings.KNOWLEDGE_SERVICE_APP_MODE, # DÜZELTME
+        "app_mode": settings.KNOWLEDGE_SERVICE_APP_MODE,
     }
-    
     if not is_ready:
         log.warn("Health check: Model henüz yüklenmedi, 503 yanıtı veriliyor.", **response_data)
-    
     return Response(content=str(response_data), status_code=status_code, media_type="application/json")
 
 @app.get("/healthz", include_in_schema=False)
