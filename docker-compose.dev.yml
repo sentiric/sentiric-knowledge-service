@@ -10,37 +10,103 @@ networks:
         - subnet: ${NETWORK_SUBNET}
           gateway: ${NETWORK_GATEWAY}
   
-# volumes:
+volumes:
+
   # [infra]: Temel Altyapı (Infrastructure Layer)
-  # --------------------------------------------------
+  # --------------------------------------------------  
+  postgres_data:
+  qdrant_data:
+
+  # [core-service]: Çekirdek Servisler ve Kütüphaneler (Core Layer)
+  # --------------------------------------------------  
+  knowledge_model_cache:   
 
 services:
+
+  # [infra]: Temel Altyapı (Infrastructure Layer)
+  # --------------------------------------------------
+  postgres:
+    build: { context: ../sentiric-postgres }
+    env_file: ["${ENV_FILE_PATH}"]  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ${CONFIG_REPO_PATH}/postgres-init:/docker-entrypoint-initdb.d    
+    ports: 
+      - "${POSTGRES_DB_PORT:-5432}:${POSTGRES_DB_PORT:-5432}"
+    networks:
+      sentiric-net:
+        ipv4_address: ${POSTGRES_IPV4_ADDRESS}
+    # dns:
+    #   - ${DISCOVERY_SERVICE_IPV4_ADDRESS}
+    #   - ${PRIMARY_DNS:-8.8.8.8}
+    #   - ${SECONDARY_DNS:-1.1.1.1}    
+    # dns_search:
+    #   - ${DISCOVERY_DNS_SEARCH_DOMAIN}              
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  qdrant:
+    build: { context: ../sentiric-qdrant }
+    env_file: ["${ENV_FILE_PATH}"]    
+    volumes: 
+      - qdrant_data:/qdrant/storage    
+    ports: 
+      - "${QDRANT_HTTP_PORT:-6333}:${QDRANT_HTTP_PORT:-6333}"
+      - "${QDRANT_GRPC_PORT:-6334}:${QDRANT_GRPC_PORT:-6334}"      
+    networks:
+      sentiric-net:
+        ipv4_address: ${QDRANT_IPV4_ADDRESS}
+    # dns:
+    #   - ${DISCOVERY_SERVICE_IPV4_ADDRESS}
+    #   - ${PRIMARY_DNS:-8.8.8.8}
+    #   - ${SECONDARY_DNS:-1.1.1.1}    
+    # dns_search:
+    #   - ${DISCOVERY_DNS_SEARCH_DOMAIN}              
+    restart: always
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 60s       
+
+
   # [core-service]: Çekirdek Servisler ve Kütüphaneler (Core Layer)
   # -------------------------------------------------- 
   knowledge-service:
     build: { context: ../sentiric-knowledge-service }
-    env_file: ["${ENV_FILE_PATH}"]
+    env_file: ["${ENV_FILE_PATH}"]    
     volumes: 
       - "${CONFIG_REPO_PATH}:/sentiric-config:ro"
       - "${CERTIFICATES_REPO_PATH}:/sentiric-certificates:ro"
       - "${ASSETS_REPO_PATH}:/sentiric-assets:ro"
-      - "../sentiric-knowledge-data:${KNOWLEDGE_SERVICE_DATA_PATH}"      
+      - "../sentiric-knowledge-data:${KNOWLEDGE_SERVICE_DATA_PATH}"
+      - knowledge_model_cache:/root/.cache/huggingface  
     ports: 
-      - "12040:${KNOWLEDGE_SERVICE_HTTP_PORT:-12040}"
-      - "12041:${KNOWLEDGE_SERVICE_GRPC_PORT:-12041}"
-      - "12042:${KNOWLEDGE_SERVICE_METRICS_PORT:-12042}"          
+      - "${KNOWLEDGE_SERVICE_HTTP_PORT:-12040}:${KNOWLEDGE_SERVICE_HTTP_PORT:-12040}"
+      - "${KNOWLEDGE_SERVICE_GRPC_PORT:-12041}:${KNOWLEDGE_SERVICE_GRPC_PORT:-12041}"
+      - "${KNOWLEDGE_SERVICE_METRICS_PORT:-12042}:${KNOWLEDGE_SERVICE_METRICS_PORT:-12042}"          
     networks:
       sentiric-net:
         ipv4_address: ${KNOWLEDGE_SERVICE_IPV4_ADDRESS}   
+    # dns:
+    #   - ${DISCOVERY_SERVICE_IPV4_ADDRESS}
+    #   - ${PRIMARY_DNS:-8.8.8.8}
+    #   - ${SECONDARY_DNS:-1.1.1.1}    
+    # dns_search:
+    #   - ${DISCOVERY_DNS_SEARCH_DOMAIN}              
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 12040 && nc -z localhost 12041"]
       interval: 15s
       timeout: 10s
       retries: 5
-      # DEĞİŞİKLİK BURADA: Başlangıç periyodunu 10 dakikaya çıkarıyoruz.
-      # Bu, yavaş ağlarda bile modelin indirilip yüklenmesi için yeterli zaman tanıyacaktır.
-      start_period: 10m     
-    # depends_on: 
-    #   postgres: { condition: service_healthy }
-    #   qdrant: { condition: service_healthy  }     
+      start_period: 10m   
+    depends_on: 
+      postgres: { condition: service_healthy }
+      qdrant: { condition: service_healthy  }   

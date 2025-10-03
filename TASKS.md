@@ -1,12 +1,8 @@
-# 📚 Sentiric Knowledge Service - Görev Listesi (v1.3 - Üretim Kararlılığı)
+# 📚 Sentiric Knowledge Service - Görev Listesi
 
-Bu belge, knowledge-service'in geliştirme yol haritasını ve önceliklerini tanımlar.
+Bu servisin mevcut ve gelecekteki tüm geliştirme görevleri, platformun merkezi görev yönetimi reposu olan **`sentiric-tasks`**'ta yönetilmektedir.
+
+➡️ **[Aktif Görev Panosuna Git](https://github.com/sentiric/sentiric-tasks/blob/main/TASKS.md)**
 
 ---
-
-### **Gelecek Fazla: Gelişmiş Veri Yönetimi (İlerleme Kaydedildi)**
-
-
--   **Görev ID: KS-FEAT-02 - Hibrit Arama (Hybrid Search)**
-    -   **Durum:** ⬜ **Planlandı**
-    -   **Açıklama:** Anlamsal aramaya ek olarak, ürün kodları veya spesifik terimler gibi durumlar için anahtar kelime tabanlı aramayı da destekleyerek arama doğruluğunu artırmak.
+Bu belge, servise özel, çok küçük ve acil görevler için geçici bir not defteri olarak kullanılabilir.
