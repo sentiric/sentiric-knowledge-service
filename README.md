@@ -1,4 +1,13 @@
-# 📚 Sentiric Knowledge Service
+# 📚 Sentiric Knowledge Service (⚠️ ARŞİVLENDİ ⚠️)
+
+[![Status](https://img.shields.io/badge/status-deprecated-red.svg)]()
+
+**Bu servis artık kullanımdan kaldırılmıştır.** Sorumlulukları, daha modüler ve performanslı bir RAG mimarisi için iki yeni servise bölünmüştür:
+
+1.  **Veri İndeksleme (Yazma):** [sentiric-knowledge-indexing-service](https://github.com/sentiric/sentiric-knowledge-indexing-service)
+2.  **Veri Sorgulama (Okuma):** [sentiric-knowledge-query-service](https://github.com/sentiric/sentiric-knowledge-query-service)
+
+Lütfen yeni geliştirmeler için bu iki depoyu kullanın. Bu depo, yalnızca geçmiş kodları incelemek amacıyla korunmaktadır.
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
